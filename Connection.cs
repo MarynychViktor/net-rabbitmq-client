@@ -8,14 +8,14 @@ namespace AMQPClient;
 
 public class Connection
 {
-    private TcpClient _client;
+    public TcpClient _client;
     private uint HeaderSize = 7;
     private Dictionary<int, IAmqpChannel> _channels = new();
 
     public Connection()
     {
         open();
-        _channels.Add(0, new DefaultAmqpChannel());
+        _channels.Add(0, new DefaultAmqpChannel(this));
     }
 
     private async void open()
