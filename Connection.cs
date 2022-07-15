@@ -52,6 +52,7 @@ public class Connection
                 var frameType = reader.ReadByte();
                 var channelId = reader.ReadInt16();
                 var frameSize = reader.ReadInt32();
+                
                 Console.WriteLine($"Rec {BitConverter.ToInt32(frameHeader.Skip(3).Take(4).Reverse().ToArray())}");
                 Console.WriteLine($"Header {frameHeader} - {frameHeader.Length} Frame {frameType}, channel {channelId}, size {frameSize}");
                 var frameBody = await ReadAsync(frameSize);
