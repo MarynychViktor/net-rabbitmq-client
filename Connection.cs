@@ -3,41 +3,34 @@ using System.Text;
 using AMQPClient.Methods.Channels;
 using AMQPClient.Protocol;
 using Encoder = AMQPClient.Protocol.Encoder;
+using Chan = System.Threading.Channels;
 
 namespace AMQPClient;
 
 public class Connection
 {
-    public TcpClient _client;
+    private TcpClient _client;
     private uint HeaderSize = 7;
     private Dictionary<int, IAmqpChannel> _channels = new();
     private int _channelId;
+    private Chan.Channel<byte> _openChannel;
 
     public Connection()
     {
-        open();
         _channels.Add(0, new DefaultAmqpChannel(this));
     }
 
-    public async Task<Channel> CreateChannel()
+    public async Task<Channel> CreateChannelAsync()
     {
         Interlocked.Increment(ref _channelId);
 
-        var ch = new Channel(_client, (short)_channelId);
+        var ch = new Channel(this, (short)_channelId);
+        _channels.Add(_channelId, ch);
 
         await ch.OpenAsync();
 
         return ch;
         // return new Channel(_client, (short) _channelId);
-    }
-
-    public Dictionary<int, int> dict = new Dictionary<int, int>()
-    {
-        {1, 1}
-    };
-
-    private void CallMethod()
-    {
     }
     
     private void SendProtocolHeader()
@@ -45,12 +38,13 @@ public class Connection
         _client.Client.Send(Encoding.ASCII.GetBytes("AMQP").Concat(new byte[] { 0, 0, 9, 1 }).ToArray());
     }
     
-    private async void open()
+    public async Task OpenAsync()
     {
+        _openChannel = Chan.Channel.CreateBounded<byte>(1);
         _client = new TcpClient("localhost", 5672);
         SendProtocolHeader();
 
-        await Task.Factory.StartNew(async () =>
+        Task.Factory.StartNew(async () =>
         {
             while (true)
             {
@@ -70,6 +64,20 @@ public class Connection
                 }
             }
         });
+
+        Console.WriteLine("Wait for openChannel");
+        await _openChannel.Reader.ReadAsync();
+        Console.WriteLine("OpenChannel completed");
+    }
+
+    internal void OpenEnd()
+    {
+        _openChannel.Writer.WriteAsync(0);
+    }
+    
+    internal void SendFrame(AMQPFrame frame)
+    {
+        _client.Client.Send(frame.ToBytes());
     }
     
     private async Task<AMQPFrame> ReadFrameAsync()
