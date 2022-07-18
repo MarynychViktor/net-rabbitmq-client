@@ -6,5 +6,5 @@ public class OpenMethod : Method
     public short MethodId => 10;
 
     [ShortStringField(0)]
-    private string Reserved1 { get; set; }
+    public string Reserved1 { get; set; } = "";
 }

@@ -49,6 +49,7 @@ public class Connection
             while (true)
             {
                 var frame = await ReadFrameAsync();
+                Console.WriteLine($"Handle frame from {frame.Channel}");
                 var channel = _channels.ContainsKey(frame.Channel)
                     ? _channels[frame.Channel]
                     : throw new Exception($"Invalid channel: {frame.Channel}");
@@ -65,9 +66,7 @@ public class Connection
             }
         });
 
-        Console.WriteLine("Wait for openChannel");
         await _openChannel.Reader.ReadAsync();
-        Console.WriteLine("OpenChannel completed");
     }
 
     internal void OpenEnd()
@@ -92,7 +91,6 @@ public class Connection
         var frameBody = await ReadAsync(size);
         // Read EOF frame
         var end = await ReadAsync(1);
-        Console.WriteLine($"Read {end[0]}");
 
         if (type == 1)
         {

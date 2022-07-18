@@ -4,14 +4,11 @@ public class Decoder
 {
     public static T UnmarshalMethodFrame<T>(byte[] body) where T : class, new()
     {
-        Console.WriteLine("Enter unmarshal ****\n\n");
         var reader = new BinReader(body);
         // Skip classId
         var classId = reader.ReadInt16();
-        Console.WriteLine($"Class id {classId}");
         // Skip methodId
         var methodId = reader.ReadInt16();
-        Console.WriteLine($"methodId {methodId}");
 
         var method = new T();
 
@@ -27,7 +24,6 @@ public class Decoder
    
         foreach (var (property, attribute) in propertiesWithAttrs)
         {
-            Console.WriteLine($"Handle \n\n******** {typeof(T).Name}{attribute.GetType().Name}");
             switch (attribute)
             {
                 case ByteField attr:
@@ -56,7 +52,6 @@ public class Decoder
             }
                             
         }
-        Console.WriteLine("End unmarshal ****\n\n");
 
         return method;
     }

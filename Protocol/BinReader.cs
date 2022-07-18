@@ -20,11 +20,9 @@ public class BinReader : BinaryReader
         uint tableSize = ReadUInt32();
         long endPos = _stream.Position + tableSize;
         Dictionary<string, object> properties = new();
-        Console.WriteLine($"Tab size {tableSize}, endPos {endPos}, pos {_stream.Position}");
 
         while (_stream.Position < endPos)
         {
-            Console.WriteLine($"Tab size {tableSize}, endPos {endPos}, pos {_stream.Position}");
             var (name, value) = ReadFieldValuePair();
             properties[name] = value;
         }
@@ -35,7 +33,6 @@ public class BinReader : BinaryReader
     public (string, object) ReadFieldValuePair()
     {
         string fieldName = ReadShortStr();
-        Console.WriteLine($"fieldName {fieldName}");
 
         char val = ReadChar();
 
@@ -51,7 +48,6 @@ public class BinReader : BinaryReader
     public string ReadShortStr()
     {
         byte strLen = ReadByte();
-        Console.WriteLine($"Str len {strLen}");
         byte[] bytes = ReadBytes(strLen);
 
         return Encoding.ASCII.GetString(bytes);

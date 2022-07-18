@@ -66,6 +66,7 @@ public abstract class ChannelBase : IAmqpChannel
         catch (Exception e)
         {
             Console.WriteLine($"Exception {e}");
+            throw e;
         }
 
         return Task.CompletedTask;

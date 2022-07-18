@@ -14,6 +14,7 @@ public class DefaultAmqpChannel : ChannelBase
         {1010, typeof(StartMethod)},
         {1030, typeof(TuneMethod)},
         {1041, typeof(OpenOkMethod)},
+        {1050, typeof(ConnectionClose)},
     };
 
     protected override Type GetMethodType(short classId, short methodId)
@@ -45,8 +46,6 @@ public class DefaultAmqpChannel : ChannelBase
         };
 
         Connection.SendFrame(frame);
-        Console.WriteLine("****");
-        Console.WriteLine("Conn-ok sent");
     }
       
     private void HandleMethod(TuneMethod m)
@@ -78,9 +77,13 @@ public class DefaultAmqpChannel : ChannelBase
     
     private void HandleMethod(OpenOkMethod m)
     {
-        Console.WriteLine($"Open-ok received {m}");
         Connection.OpenEnd();
-        Console.WriteLine($"Open-ok OpenEnd completed");
+    }
+
+    private void HandleMethod(ConnectionClose m)
+    {
+        Console.WriteLine("ConnectionClose");
+        Console.WriteLine(m);
     }
 
     public DefaultAmqpChannel(Connection connection) : base(connection, 0)

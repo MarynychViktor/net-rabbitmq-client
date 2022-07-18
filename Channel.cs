@@ -1,18 +1,17 @@
-using System.Net.Sockets;
 using AMQPClient.Methods.Channels;
 using AMQPClient.Protocol;
+using Encoder = AMQPClient.Protocol.Encoder;
+using Chan = System.Threading.Channels;
 
 namespace AMQPClient;
-
-using Chan = System.Threading.Channels;
 
 public class Channel : ChannelBase
 {
     private Chan.Channel<byte> _openChannel;
 
     public Channel(Connection connection, short id) : base(connection, id)
-    {
-    }
+    { }
+
     private readonly Dictionary<int, Type> _methodIdTypeMap = new ()
     {
         {2011, typeof(OpenOkMethod)},
@@ -26,27 +25,22 @@ public class Channel : ChannelBase
     {
         var openMethod = new OpenMethod();
         _openChannel = Chan.Channel.CreateBounded<byte>(1);
-
-        await _openChannel.Reader.ReadAsync();
-
         Connection.SendFrame(new AMQPFrame()
         {
             Type = AMQPFrameType.Method,
             Channel = ChannelId,
             Body = Encoder.MarshalMethodFrame(openMethod),
         });
+        await _openChannel.Reader.ReadAsync();
     }
 
     public Task HandleFrameAsync(byte type, byte[] body)
     {
-        Console.WriteLine($"Handle frame async called {body.Length}");
-
         try
         {
             switch (type)
             {
                 case 1:
-                    Console.WriteLine("Channel ---HandleMethodFrame");
                     HandleMethodFrameAsync(body);
                     break;
                 default:
@@ -58,6 +52,7 @@ public class Channel : ChannelBase
         catch (Exception e)
         {
             Console.WriteLine($"Exception {e}");
+            throw e;
         }
 
         return Task.CompletedTask;
@@ -66,8 +61,6 @@ public class Channel : ChannelBase
 
     private void HandleMethod(OpenOkMethod m)
     {
-        Console.WriteLine($"Channel Open-ok received {m}");
         _openChannel.Writer.WriteAsync(0).GetAwaiter().GetResult();
-        Console.WriteLine($"Channel Open-ok received {m}");
     }
 }
