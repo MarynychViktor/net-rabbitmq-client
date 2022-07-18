@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text;
 using AMQPClient.Methods.Connection;
@@ -16,6 +17,7 @@ public class DefaultAmqpChannel : ChannelBase
         {1041, typeof(OpenOkMethod)},
         {1050, typeof(ConnectionClose)},
     };
+    private BlockingCollection<object> queue = new ();
 
     protected override Type GetMethodType(short classId, short methodId)
     {

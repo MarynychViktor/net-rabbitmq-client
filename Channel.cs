@@ -1,3 +1,4 @@
+using System.Collections.Concurrent;
 using AMQPClient.Methods.Channels;
 using AMQPClient.Protocol;
 using Encoder = AMQPClient.Protocol.Encoder;
@@ -7,7 +8,7 @@ namespace AMQPClient;
 
 public class Channel : ChannelBase
 {
-    private Chan.Channel<byte> _openChannel;
+    private BlockingCollection<object> queue = new ();
 
     public Channel(Connection connection, short id) : base(connection, id)
     { }
@@ -24,14 +25,13 @@ public class Channel : ChannelBase
     internal async Task OpenAsync()
     {
         var openMethod = new OpenMethod();
-        _openChannel = Chan.Channel.CreateBounded<byte>(1);
         Connection.SendFrame(new AMQPFrame()
         {
             Type = AMQPFrameType.Method,
             Channel = ChannelId,
             Body = Encoder.MarshalMethodFrame(openMethod),
         });
-        await _openChannel.Reader.ReadAsync();
+        queue.Take();
     }
 
     public Task HandleFrameAsync(byte type, byte[] body)
@@ -61,6 +61,6 @@ public class Channel : ChannelBase
 
     private void HandleMethod(OpenOkMethod m)
     {
-        _openChannel.Writer.WriteAsync(0).GetAwaiter().GetResult();
+        queue.Add(null);
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Net.Sockets;
+﻿using System.Collections.Concurrent;
+using System.Net.Sockets;
 using System.Text;
 using AMQPClient.Methods.Channels;
 using AMQPClient.Protocol;
@@ -13,7 +14,8 @@ public class Connection
     private uint HeaderSize = 7;
     private Dictionary<int, IAmqpChannel> _channels = new();
     private int _channelId;
-    private Chan.Channel<byte> _openChannel;
+    // private Chan.Channel<byte> _openChannel;
+    private BlockingCollection<object> queue = new ();
 
     public Connection()
     {
@@ -27,8 +29,9 @@ public class Connection
         var ch = new Channel(this, (short)_channelId);
         _channels.Add(_channelId, ch);
 
-        await ch.OpenAsync();
+        // await ch.OpenAsync();
 
+        queue.Take();
         return ch;
         // return new Channel(_client, (short) _channelId);
     }
@@ -40,7 +43,7 @@ public class Connection
     
     public async Task OpenAsync()
     {
-        _openChannel = Chan.Channel.CreateBounded<byte>(1);
+        // _openChannel = Chan.Channel.CreateBounded<byte>(1);
         _client = new TcpClient("localhost", 5672);
         SendProtocolHeader();
 
@@ -66,12 +69,14 @@ public class Connection
             }
         });
 
-        await _openChannel.Reader.ReadAsync();
+        // await _openChannel.Reader.ReadAsync();
+        queue.Take();
     }
 
     internal void OpenEnd()
     {
-        _openChannel.Writer.WriteAsync(0);
+        queue.Add(null);
+        // _openChannel.Writer.WriteAsync(0);
     }
     
     internal void SendFrame(AMQPFrame frame)
