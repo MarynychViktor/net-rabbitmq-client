@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Reflection.Metadata;
 using System.Text;
 using AMQPClient.Methods.Connection;
 using AMQPClient.Protocol;

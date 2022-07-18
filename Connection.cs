@@ -1,8 +1,8 @@
-﻿using System.ComponentModel;
-using System.IO.Pipelines;
-using System.Net.Sockets;
+﻿using System.Net.Sockets;
 using System.Text;
+using AMQPClient.Methods.Channels;
 using AMQPClient.Protocol;
+using Encoder = AMQPClient.Protocol.Encoder;
 
 namespace AMQPClient;
 
@@ -11,6 +11,7 @@ public class Connection
     public TcpClient _client;
     private uint HeaderSize = 7;
     private Dictionary<int, IAmqpChannel> _channels = new();
+    private int _channelId;
 
     public Connection()
     {
@@ -18,6 +19,27 @@ public class Connection
         _channels.Add(0, new DefaultAmqpChannel(this));
     }
 
+    public async Task<Channel> CreateChannel()
+    {
+        Interlocked.Increment(ref _channelId);
+
+        var ch = new Channel(_client, (short)_channelId);
+
+        await ch.OpenAsync();
+
+        return ch;
+        // return new Channel(_client, (short) _channelId);
+    }
+
+    public Dictionary<int, int> dict = new Dictionary<int, int>()
+    {
+        {1, 1}
+    };
+
+    private void CallMethod()
+    {
+    }
+    
     private void SendProtocolHeader()
     {
         _client.Client.Send(Encoding.ASCII.GetBytes("AMQP").Concat(new byte[] { 0, 0, 9, 1 }).ToArray());
