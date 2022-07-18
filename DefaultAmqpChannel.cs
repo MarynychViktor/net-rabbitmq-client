@@ -1,7 +1,10 @@
 using System.Reflection;
 using System.Reflection.Metadata;
+using System.Text;
 using AMQPClient.Methods.Connection;
 using AMQPClient.Protocol;
+using Decoder = AMQPClient.Protocol.Decoder;
+using Encoder = AMQPClient.Protocol.Encoder;
 
 namespace AMQPClient;
 
@@ -19,171 +22,23 @@ public class DefaultAmqpChannel : IAmqpChannel
         _connection = connection;
     }
 
-    public T UnmarshalMethodFrame<T>(byte[] body) where T : class, new()
-    {
-        var reader = new BinReader(body);
-        // Skip classId
-        var classId = reader.ReadInt16();
-        // Skip methodId
-        var methodId = reader.ReadInt16();
-        
-        var method = new T();
-
-        var propertiesWithAttrs = typeof(T).GetProperties()
-            .Select(info =>
-            {
-                var attrs = (MethodField[])info.GetCustomAttributes(typeof(MethodField), false);
-
-                return (Property: info, FieldAttribute: attrs.Length > 0 ? attrs[0] : null);
-            })
-            .Where(data => data.FieldAttribute != null)
-            .OrderBy(data => data.FieldAttribute.index);
-   
-        foreach (var (property, attribute) in propertiesWithAttrs)
-        {
-            switch (attribute)
-            {
-                case ByteField attr:
-                    property.SetValue(method, reader.ReadByte());
-                    break;
-                case PropertiesTableField attr:
-                    property.SetValue(method, reader.ReadFieldTable());
-                    break;
-                case LongStringField attr:
-                    property.SetValue(method, reader.ReadLongStr());
-                    break;
-            }
-                            
-        }
-
-        return method;
-    }
-
     public Task HandleFrameAsync(byte type, byte[] body)
     {
         Console.WriteLine($"Handle frame async called {body.Length}");
 
         try
         {
-
-            var reader = new BinReader(body);
-            short classId = reader.ReadInt16();
-            short methodId = reader.ReadInt16();
-            Console.WriteLine($"Handling method {methodId}");
-            var methodType = _methodIdTypeMap[classId * 100 + methodId];
-
-            if (classId != 10)
+            switch (type)
             {
-                Console.WriteLine($"Unsupported class with id {classId}");
-                throw new Exception("unsupported class");
+                case 1:
+                    Console.WriteLine("HandleMethodFrame");
+                    HandleMethodFrameAsync(body);
+                    break;
+                default:
+                    throw new Exception($"Not matched type {type}");
+
             }
-            else
-            {
-                Console.WriteLine($"Handling method {methodId}");
-                switch (methodId)
-                {
-                    case 10:
-                        Console.WriteLine($"Received start method");
-                        // typeof(StartMethod).GetProperties()
-                        //     .Select(info => (MethodField[])info.GetCustomAttributes(typeof(MethodField), false))
-                        //     .Where(attrs => attrs.Length > 0)
-                        //     .Select(attrs => attrs[0])
-                        //     .OrderBy(attr => attr.index)
-                        // var startMethod = new StartMethod();
-                        // TODO: call method dynamically
-                        var m = GetType().GetMethod("UnmarshalMethodFrame");
-                        var mm = m.MakeGenericMethod(methodType);
-                        mm.Invoke(this, new []{body});
-                        
-                        
-                        StartMethod startMethod = UnmarshalMethodFrame<StartMethod>(body);
-                        //
-                        // var propertiesWithAttrs = typeof(StartMethod).GetProperties()
-                        //     .Select(info =>
-                        //     {
-                        //         var attrs = (MethodField[])info.GetCustomAttributes(typeof(MethodField), false);
-                        //
-                        //         return (Property: info, FieldAttribute: attrs.Length > 0 ? attrs[0] : null);
-                        //     })
-                        //     .Where(data => data.FieldAttribute != null)
-                        //     .OrderBy(data => data.FieldAttribute.index);
-                        //
-                        // foreach (var (property, attribute) in propertiesWithAttrs)
-                        // {
-                        //     switch (attribute)
-                        //     {
-                        //         case ByteField attr:
-                        //             property.SetValue(startMethod, reader.ReadByte());
-                        //             break;
-                        //         case PropertiesTableField attr:
-                        //             property.SetValue(startMethod, reader.ReadFieldTable());
-                        //             break;
-                        //         case LongStringField attr:
-                        //             property.SetValue(startMethod, reader.ReadLongStr());
-                        //             break;
-                        //     }
-                        //     
-                        // }
-                        foreach (var pair in startMethod.ServerProperties)
-                        {
-                            Console.WriteLine($"Attributes properties {pair.Key}, Value {pair.Value}");
-                        }
-
-                        throw new Exception("reached place");
-                        foreach (var propertyInfo in typeof(StartMethod).GetProperties())
-                        {
-                            var fields = (MethodField[])propertyInfo.GetCustomAttributes(typeof(MethodField), false);
-                            if (fields.Length == 0)
-                            {
-                                continue;
-                            }
-
-                            var fieldAttribute = fields[0];
-                            
-                        }
-
-                        var majVersion = reader.ReadByte();
-                        var minVersion = reader.ReadByte();
-                        var serverProperties = reader.ReadFieldTable();
-                        var mechanisms = reader.ReadLongStr();
-                        var locales = reader.ReadLongStr();
-
-                        Console.WriteLine(
-                            $"Start properties maj: {majVersion}, min: {minVersion}, props: {serverProperties}, mech: {mechanisms}, locale: {locales}");
-                        foreach (var pair in serverProperties)
-                        {
-                            Console.WriteLine($"Key {pair.Key}, Value {pair.Value}");
-                        }
-
-                        var stream = new MemoryStream();
-                        var methodWriter = new BinWriter(stream);
-                        methodWriter.Write((short)10);
-                        methodWriter.Write((short)11);
-                        methodWriter.WriteFieldTable(new Dictionary<string, object>()
-                        {
-                            {"product",     "simpleapp"},
-                            {"platform",    "Erlang/OTP 24.3.4"},
-                            {"copyright",   "param-pam-pam"},
-                            {"information", "Licensed under the MPL 2.0"},
-                        });
-                        methodWriter.WriteShortStr("PLAIN");
-                        methodWriter.WriteLongStr("\x00user\x00password");
-                        methodWriter.WriteShortStr("en_US");
-                        var methodBytes = stream.ToArray();
-
-                        var frameStream = new MemoryStream();
-                        methodWriter = new BinWriter(frameStream);
-                        methodWriter.Write((byte)1);
-                        methodWriter.Write((short)0);
-                        methodWriter.Write(methodBytes.Length);
-                        methodWriter.Write(methodBytes);
-                        methodWriter.Write((byte)206);
-                        _connection._client.Client.Send(frameStream.ToArray());
-                        Console.WriteLine($"Send response {methodBytes.Length}");
-
-                        break;
-                }
-            }
+            
         }
         catch (Exception e)
         {
@@ -193,42 +48,45 @@ public class DefaultAmqpChannel : IAmqpChannel
         return Task.CompletedTask;
     }
     
-      public Task HandleMethodFrame(byte[] body)
+    
+    public Task HandleMethodFrameAsync(byte[] body)
     {
-        Console.WriteLine($"Handle frame async called {body.Length}");
-
         try
         {
+            var sb = new StringBuilder();
+            sb.Append("[");
+            foreach (var b in body)
+            {
+                sb.Append(b + ",");
+            }
 
+            sb.Append("]");
+            Console.WriteLine("11111111111111");
+            Console.WriteLine(sb.ToString());
+            Console.WriteLine("11111111111111");
             var reader = new BinReader(body);
+            
             short classId = reader.ReadInt16();
             short methodId = reader.ReadInt16();
-            Console.WriteLine($"Handling method {methodId}");
+
             var methodType = _methodIdTypeMap[classId * 100 + methodId];
 
-            if (classId != 10)
+            if (methodType == null)
             {
-                Console.WriteLine($"Unsupported class with id {classId}");
-                throw new Exception("unsupported class");
+                throw new Exception($"Not registered method type for {classId} {methodId}");
             }
-            else
-            {
-                Console.WriteLine($"Handling method {methodId}");
-                switch (methodId)
-                {
-                    case 10:
+            
+            var methodObj = typeof(Decoder).GetMethod("UnmarshalMethodFrame").MakeGenericMethod(methodType)
+                .Invoke(this, new []{body});
 
-                        // TODO: call method dynamically
-                        var m = GetType().GetMethod("UnmarshalMethodFrame");
-                        var mm = m.MakeGenericMethod(methodType);
-                        mm.Invoke(this, new []{body});
-                        
-                        
-                        StartMethod startMethod = UnmarshalMethodFrame<StartMethod>(body);
+            GetType().GetMethod(
+                    "HandleMethod",
+                    BindingFlags.NonPublic | BindingFlags.Instance,
+                    new []{methodType}
+                )
+                .Invoke(this, new []{methodObj});
 
-                        
-                }
-            }
+            throw new Exception("reached place of dynamic call");
         }
         catch (Exception e)
         {
@@ -236,5 +94,54 @@ public class DefaultAmqpChannel : IAmqpChannel
         }
 
         return Task.CompletedTask;
+    }
+
+    private void HandleMethod(StartMethod m)
+    {
+        var startOkMethod = new StartOkMethod()
+        {
+            ClientProperties = new Dictionary<string, object>()
+            {
+                { "product", "simpleapp123123asd asd asdasd simpleapp123123asd asd asdasd" },
+                { "platform", "Erlang/OTP 24.3.4" },
+                { "copyright", "param-pam-pamqweqwe" },
+                { "information", "Licensed under the MPL 2.0" },
+            },
+            Mechanism = "PLAIN",
+            Response = "\x00" + "user" + "\x00" + "password",
+            Locale = "en_US",
+        };
+        var bytes = Encoder.MarshalMethodFrame(startOkMethod);
+        var bts = Decoder.UnmarshalMethodFrame<StartOkMethod>(bytes);
+        Console.WriteLine($"----bts ${bytes.Length}");
+        Console.WriteLine(bts);
+
+        var frm = new AMQPFrame()
+        {
+            Type = AMQPFrameType.Method,
+            Channel = 0,
+            Body = bytes
+        }.ToBytes();
+        var sb = new StringBuilder();
+        sb.Append("[");
+        foreach (var b in frm)
+        {
+            sb.Append(b + ",");
+        }
+
+        sb.Append("]");
+        Console.WriteLine("------------");
+        Console.WriteLine(sb.ToString());
+        Console.WriteLine("------------");
+
+        _connection._client.Client.Send(frm);
+        Console.WriteLine("****");
+        Console.WriteLine("Conn-ok sent");
+    }
+      
+      
+    private void HandleMethod(object m)
+    {
+        Console.WriteLine("Handing Object method");
     }
 }

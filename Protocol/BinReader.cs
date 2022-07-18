@@ -148,7 +148,7 @@ public class BinReader : BinaryReader
             case 'F':
                 return ReadFieldTable();
             default:
-                throw new Exception($"Invalid character provided {type}");
+                throw new Exception($"Invalid character provided `{type}`");
         }
     }
 

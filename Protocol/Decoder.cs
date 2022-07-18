@@ -1,0 +1,54 @@
+namespace AMQPClient.Protocol;
+
+public class Decoder
+{
+    public static T UnmarshalMethodFrame<T>(byte[] body) where T : class, new()
+    {
+        Console.WriteLine("Enter unmarshal ****\n\n");
+        var reader = new BinReader(body);
+        // Skip classId
+        var classId = reader.ReadInt16();
+        Console.WriteLine($"Class id {classId}");
+        // Skip methodId
+        var methodId = reader.ReadInt16();
+        Console.WriteLine($"methodId {methodId}");
+
+        var method = new T();
+
+        var propertiesWithAttrs = typeof(T).GetProperties()
+            .Select(info =>
+            {
+                var attrs = (MethodField[])info.GetCustomAttributes(typeof(MethodField), false);
+
+                return (Property: info, FieldAttribute: attrs.Length > 0 ? attrs[0] : null);
+            })
+            .Where(data => data.FieldAttribute != null)
+            .OrderBy(data => data.FieldAttribute.index);
+   
+        foreach (var (property, attribute) in propertiesWithAttrs)
+        {
+            Console.WriteLine($"Handle \n\n******** {typeof(T).Name}{attribute.GetType().Name}");
+            switch (attribute)
+            {
+                case ByteField attr:
+                    property.SetValue(method, reader.ReadByte());
+                    break;
+                case PropertiesTableField attr:
+                    property.SetValue(method, reader.ReadFieldTable());
+                    break;
+                case LongStringField attr:
+                    property.SetValue(method, reader.ReadLongStr());
+                    break;
+                case ShortStringField attr:
+                    property.SetValue(method, reader.ReadShortStr());
+                    break;
+                default:
+                    throw new Exception($"Unrecognized attr {attribute}");
+            }
+                            
+        }
+        Console.WriteLine("End unmarshal ****\n\n");
+
+        return method;
+    }
+}

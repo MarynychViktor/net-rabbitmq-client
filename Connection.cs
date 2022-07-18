@@ -18,56 +18,60 @@ public class Connection
         _channels.Add(0, new DefaultAmqpChannel(this));
     }
 
+    private void SendProtocolHeader()
+    {
+        _client.Client.Send(Encoding.ASCII.GetBytes("AMQP").Concat(new byte[] { 0, 0, 9, 1 }).ToArray());
+    }
+    
     private async void open()
     {
         _client = new TcpClient("localhost", 5672);
-        // []byte{'A', 'M', 'Q', 'P', 0, 0, 9, 1})
-        // var b = new ArraySegment<byte>(
-        //         Encoding.ASCII.GetBytes("AMQP")
-        //     )
-        //     .Concat(new byte[] { 0, 0, 9, 1 }).ToArray();
-        // _client.Client.Send(b);
-        
-        //*************
-        // var reader = new BinaryReader(new MemoryStream(b));
-        //*************
-        
-        // var reader.ReadByte();
-        var memStream = new MemoryStream();
-        var writer = new BinaryWriter(memStream, Encoding.ASCII);
-        writer.Write(Encoding.ASCII.GetBytes("AMQP"));
-        writer.Write(new byte[] { 0, 0, 9, 1 });
-        _client.Client.Send(memStream.ToArray());
-
-        // new List<char>() { 'A', 'M', 'P', 'Q' }.Select((c => c.))
+        SendProtocolHeader();
 
         await Task.Factory.StartNew(async () =>
         {
             while (true)
             {
-                Console.WriteLine("Waiting for data");
-                var frameHeader = await ReadAsync(7);
+                var frame = await ReadFrameAsync();
+                var channel = _channels.ContainsKey(frame.Channel)
+                    ? _channels[frame.Channel]
+                    : throw new Exception($"Invalid channel: {frame.Channel}");
 
-                var reader = new BinReader(new MemoryStream(frameHeader));
-                var frameType = reader.ReadByte();
-                var channelId = reader.ReadInt16();
-                var frameSize = reader.ReadInt32();
-                
-                Console.WriteLine($"Rec {BitConverter.ToInt32(frameHeader.Skip(3).Take(4).Reverse().ToArray())}");
-                Console.WriteLine($"Header {frameHeader} - {frameHeader.Length} Frame {frameType}, channel {channelId}, size {frameSize}");
-                var frameBody = await ReadAsync(frameSize);
-                // Read EOF frame
-                await ReadAsync(1);
-                Console.WriteLine($"Handle body #{frameBody[frameBody.Length - 1]}");
+                switch (frame.Type)
+                {
+                    case AMQPFrameType.Method:
+                        await channel.HandleMethodFrameAsync(frame.Body);
+                        break;
+                    default:
+                        throw new Exception($"Not matched type {frame.Type}");
 
-                var channel = _channels.ContainsKey(channelId)
-                    ? _channels[channelId]
-                    : throw new Exception($"Invalid channel: {channelId}");
-
-                Console.WriteLine($"Handle fr");
-                await channel.HandleFrameAsync(frameType, frameBody);
+                }
             }
         });
+    }
+    
+    private async Task<AMQPFrame> ReadFrameAsync()
+    {
+        var header = await ReadAsync(7);
+
+        var reader = new BinReader(new MemoryStream(header));
+        var type = reader.ReadByte();
+        var channel = reader.ReadInt16();
+        var size = reader.ReadInt32();
+
+        var frameBody = await ReadAsync(size);
+        // Read EOF frame
+        var end = await ReadAsync(1);
+        Console.WriteLine($"Read {end[0]}");
+
+        if (type == 1)
+        {
+            return AMQPFrame.MethodFrame(channel, frameBody);
+        }
+        else
+        {
+            throw new Exception("failed");
+        }
     }
 
     private async Task<byte[]> ReadAsync(int size)

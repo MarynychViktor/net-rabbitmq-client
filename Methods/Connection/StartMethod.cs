@@ -12,10 +12,10 @@ public class StartMethod
     
     [ByteField(1)]
     public byte VerMinor { get; set; }
-    
+
     [PropertiesTableField(2)]
     public Dictionary<string, object> ServerProperties { get; set; }
-    
+
     [LongStringField(3)]
     public string Mechanisms { get; set; }
 
