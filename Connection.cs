@@ -54,7 +54,7 @@ public class Connection
     {
         var header = await ReadAsync(7);
 
-        var reader = new BinReader(new MemoryStream(header));
+        var reader = new BinReader(header);
         var type = reader.ReadByte();
         var channel = reader.ReadInt16();
         var size = reader.ReadInt32();

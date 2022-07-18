@@ -18,16 +18,14 @@ public class AMQPFrame
 
     public byte[] ToBytes()
     {
-        var stream = new MemoryStream();
-        var writer = new BinWriter(stream);
+        var writer = new BinWriter();
         writer.Write((byte)1);
         writer.Write(Channel);
         writer.Write(Body.Length);
-        Console.WriteLine($"Size {Body.Length}");
         writer.Write(Body);
         writer.Write((byte)0xCE);
 
-        return stream.ToArray();
+        return writer.ToArray();
     }
 }
 

@@ -149,4 +149,14 @@ public class BinWriter : BinaryWriter
         Array.Reverse(bytes);
         Write(bytes);
     }
+
+    public byte[] ToArray()
+    {
+        if (_stream is MemoryStream memoryStream)
+        {
+            return memoryStream.ToArray();
+        }
+
+        throw new Exception("Not supported method");
+    }
 }

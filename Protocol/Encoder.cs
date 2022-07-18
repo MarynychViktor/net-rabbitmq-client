@@ -8,8 +8,7 @@ public class Encoder
     public static byte[] MarshalMethodFrame<T>(T methodFrame) where T : Method, new()
     {
 
-        var memStream = new MemoryStream();
-        var writer = new BinWriter(memStream);
+        var writer = new BinWriter();
         writer.Write(methodFrame.ClassId);
         writer.Write(methodFrame.MethodId);
         // writer.Write(Encoding.ASCII.GetBytes("AMQP"));
@@ -33,11 +32,14 @@ public class Encoder
                 case ByteField attr:
                     writer.Write((byte)property.GetValue(methodFrame));
                     break;
-                case PropertiesTableField attr:
-                    writer.WriteFieldTable((Dictionary<string, object>)property.GetValue(methodFrame));
-                    break;
                 case ShortField attr:
                     writer.Write((short)property.GetValue(methodFrame));
+                    break;
+                case IntField attr:
+                    writer.Write((int)property.GetValue(methodFrame));
+                    break;
+                case PropertiesTableField attr:
+                    writer.WriteFieldTable((Dictionary<string, object>)property.GetValue(methodFrame));
                     break;
                 case ShortStringField attr:
                     writer.WriteShortStr((string)property.GetValue(methodFrame));
@@ -46,10 +48,10 @@ public class Encoder
                     writer.WriteLongStr((string)property.GetValue(methodFrame));
                     break;
                 default:
-                    throw new Exception("Unrecognized");
+                    throw new Exception($"Unrecognized {attribute.GetType().Name}");
             }
         }
 
-        return memStream.ToArray();
+        return writer.ToArray();
     }
 }

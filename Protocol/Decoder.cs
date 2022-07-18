@@ -33,6 +33,15 @@ public class Decoder
                 case ByteField attr:
                     property.SetValue(method, reader.ReadByte());
                     break;
+                case ShortField attr:
+                    property.SetValue(method, reader.ReadInt16());
+                    break;
+                case IntField attr:
+                    property.SetValue(method, reader.ReadInt32());
+                    break;
+                case LongField attr:
+                    property.SetValue(method, reader.ReadInt64());
+                    break;
                 case PropertiesTableField attr:
                     property.SetValue(method, reader.ReadFieldTable());
                     break;
@@ -43,7 +52,7 @@ public class Decoder
                     property.SetValue(method, reader.ReadShortStr());
                     break;
                 default:
-                    throw new Exception($"Unrecognized attr {attribute}");
+                    throw new Exception($"Please add support for field type: {attribute}");
             }
                             
         }

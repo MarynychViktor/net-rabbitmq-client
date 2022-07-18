@@ -14,7 +14,9 @@ public class DefaultAmqpChannel : IAmqpChannel
 
     private readonly Dictionary<int, Type> _methodIdTypeMap = new ()
     {
-        {1010, typeof(StartMethod)}
+        {1010, typeof(StartMethod)},
+        {1030, typeof(TuneMethod)},
+        {1041, typeof(OpenOkMethod)},
     };
 
     public DefaultAmqpChannel(Connection connection)
@@ -86,7 +88,7 @@ public class DefaultAmqpChannel : IAmqpChannel
                 )
                 .Invoke(this, new []{methodObj});
 
-            throw new Exception("reached place of dynamic call");
+            // throw new Exception("reached place of dynamic call");
         }
         catch (Exception e)
         {
@@ -139,7 +141,78 @@ public class DefaultAmqpChannel : IAmqpChannel
         Console.WriteLine("Conn-ok sent");
     }
       
-      
+    private void HandleMethod(TuneMethod m)
+    {
+        var tuneOkMethod = new TuneOkMethod()
+        {
+            ChannelMax = m.ChannelMax,
+            Heartbeat = m.Heartbeat,
+            FrameMax = m.FrameMax,
+        };
+        var bytes = Encoder.MarshalMethodFrame(tuneOkMethod);
+        _connection._client.Client.Send(new AMQPFrame()
+        {
+            Type = AMQPFrameType.Method,
+            Channel = 0,
+            Body = bytes
+        }.ToBytes());
+        
+        var openMethod = new OpenMethod()
+        {
+            VirtualHost = "my_vhost"
+        };
+        bytes = Encoder.MarshalMethodFrame(openMethod);
+        _connection._client.Client.Send(new AMQPFrame()
+        {
+            Type = AMQPFrameType.Method,
+            Channel = 0,
+            Body = bytes
+        }.ToBytes());
+        // var startOkMethod = new StartOkMethod()
+        // {
+        //     ClientProperties = new Dictionary<string, object>()
+        //     {
+        //         { "product", "simpleapp123123asd asd asdasd simpleapp123123asd asd asdasd" },
+        //         { "platform", "Erlang/OTP 24.3.4" },
+        //         { "copyright", "param-pam-pamqweqwe" },
+        //         { "information", "Licensed under the MPL 2.0" },
+        //     },
+        //     Mechanism = "PLAIN",
+        //     Response = "\x00" + "user" + "\x00" + "password",
+        //     Locale = "en_US",
+        // };
+        // var bytes = Encoder.MarshalMethodFrame(startOkMethod);
+        // var bts = Decoder.UnmarshalMethodFrame<StartOkMethod>(bytes);
+        // Console.WriteLine($"----bts ${bytes.Length}");
+        // Console.WriteLine(bts);
+        //
+        // var frm = new AMQPFrame()
+        // {
+        //     Type = AMQPFrameType.Method,
+        //     Channel = 0,
+        //     Body = bytes
+        // }.ToBytes();
+        // var sb = new StringBuilder();
+        // sb.Append("[");
+        // foreach (var b in frm)
+        // {
+        //     sb.Append(b + ",");
+        // }
+        //
+        // sb.Append("]");
+        // Console.WriteLine("------------");
+        // Console.WriteLine(sb.ToString());
+        // Console.WriteLine("------------");
+        //
+        // _connection._client.Client.Send(frm);
+        // Console.WriteLine("****");
+        // Console.WriteLine("Conn-ok sent");
+    }
+private void HandleMethod(OpenOkMethod m)
+{
+    Console.WriteLine($"Open-ok received {m}");
+    
+}
     private void HandleMethod(object m)
     {
         Console.WriteLine("Handing Object method");
