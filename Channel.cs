@@ -1,5 +1,6 @@
 using System.Collections.Concurrent;
 using AMQPClient.Methods.Channels;
+using AMQPClient.Methods.Exchanges;
 using AMQPClient.Protocol;
 using Encoder = AMQPClient.Protocol.Encoder;
 using Chan = System.Threading.Channels;
@@ -16,12 +17,15 @@ public class Channel : ChannelBase
     private readonly Dictionary<int, Type> _methodIdTypeMap = new ()
     {
         {2011, typeof(OpenOkMethod)},
+        {2041, typeof(CloseOkMethod)},
+        {4011, typeof(ExchangeDeclareOk)},
     };
 
     protected override Type GetMethodType(short classId, short methodId)
     {
         return _methodIdTypeMap[classId * 100 + methodId];
     }
+
     internal async Task OpenAsync()
     {
         var openMethod = new OpenMethod();
@@ -30,6 +34,18 @@ public class Channel : ChannelBase
             Type = AMQPFrameType.Method,
             Channel = ChannelId,
             Body = Encoder.MarshalMethodFrame(openMethod),
+        });
+        queue.Take();
+    }
+
+    public async Task CloseAsync()
+    {
+        var closeMethod = new CloseMethod();
+        Connection.SendFrame(new AMQPFrame()
+        {
+            Type = AMQPFrameType.Method,
+            Channel = ChannelId,
+            Body = Encoder.MarshalMethodFrame(closeMethod),
         });
         queue.Take();
     }
@@ -58,8 +74,33 @@ public class Channel : ChannelBase
         return Task.CompletedTask;
     }
 
-
     private void HandleMethod(OpenOkMethod m)
+    {
+        queue.Add(null);
+    }
+
+    public void DeclareExchange(string name)
+    {
+        var declareMethod = new ExchangeDeclare()
+        {
+            Name = name
+        };
+        Connection.SendFrame(new AMQPFrame()
+        {
+            Type = AMQPFrameType.Method,
+            Channel = ChannelId,
+            Body = Encoder.MarshalMethodFrame(declareMethod),
+        });
+        queue.Take();
+    }
+    
+    private void HandleMethod(ExchangeDeclareOk m)
+    {
+        Console.WriteLine($"Exchange declared {m}");
+        queue.Add(null);
+    }
+
+    private void HandleMethod(CloseOkMethod m)
     {
         queue.Add(null);
     }

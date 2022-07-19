@@ -24,6 +24,11 @@ public class DefaultAmqpChannel : ChannelBase
         return _methodIdTypeMap[classId * 100 + methodId];
     }
 
+    public void SendProtocolHeader()
+    {
+        Connection.Send(Encoding.ASCII.GetBytes("AMQP").Concat(new byte[] { 0, 0, 9, 1 }).ToArray());
+    }
+
     private void HandleMethod(StartMethod m)
     {
         var startOkMethod = new StartOkMethod()
@@ -76,7 +81,7 @@ public class DefaultAmqpChannel : ChannelBase
             Body =  Encoder.MarshalMethodFrame(openMethod)
         });
     }
-    
+
     private void HandleMethod(OpenOkMethod m)
     {
         Connection.OpenEnd();

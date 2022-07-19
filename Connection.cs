@@ -1,9 +1,6 @@
 ﻿using System.Collections.Concurrent;
 using System.Net.Sockets;
-using System.Text;
-using AMQPClient.Methods.Channels;
 using AMQPClient.Protocol;
-using Encoder = AMQPClient.Protocol.Encoder;
 using Chan = System.Threading.Channels;
 
 namespace AMQPClient;
@@ -14,45 +11,50 @@ public class Connection
     private uint HeaderSize = 7;
     private Dictionary<int, IAmqpChannel> _channels = new();
     private int _channelId;
-    // private Chan.Channel<byte> _openChannel;
     private BlockingCollection<object> queue = new ();
+    private DefaultAmqpChannel _defaultChannel => (DefaultAmqpChannel)_channels[0];
 
     public Connection()
     {
         _channels.Add(0, new DefaultAmqpChannel(this));
     }
 
-    public async Task<Channel> CreateChannelAsync()
+    private short NextChannelId()
     {
         Interlocked.Increment(ref _channelId);
-
-        var ch = new Channel(this, (short)_channelId);
-        _channels.Add(_channelId, ch);
-
-        // await ch.OpenAsync();
-
-        queue.Take();
-        return ch;
-        // return new Channel(_client, (short) _channelId);
+        return (short)_channelId;
     }
     
-    private void SendProtocolHeader()
+    public async Task<Channel> CreateChannelAsync()
     {
-        _client.Client.Send(Encoding.ASCII.GetBytes("AMQP").Concat(new byte[] { 0, 0, 9, 1 }).ToArray());
+        var channel = new Channel(this, NextChannelId());
+        _channels.Add(_channelId, channel);
+        await channel.OpenAsync();
+
+        return channel;
     }
-    
+
     public async Task OpenAsync()
     {
-        // _openChannel = Chan.Channel.CreateBounded<byte>(1);
-        _client = new TcpClient("localhost", 5672);
-        SendProtocolHeader();
+        SetupTcpClient();
+        StartListener();
+        _defaultChannel.SendProtocolHeader();
 
+        queue.Take();
+    }
+
+    private void SetupTcpClient()
+    {
+        _client = new TcpClient("localhost", 5672);
+    }
+
+    private void StartListener()
+    {
         Task.Factory.StartNew(async () =>
         {
             while (true)
             {
                 var frame = await ReadFrameAsync();
-                Console.WriteLine($"Handle frame from {frame.Channel}");
                 var channel = _channels.ContainsKey(frame.Channel)
                     ? _channels[frame.Channel]
                     : throw new Exception($"Invalid channel: {frame.Channel}");
@@ -67,23 +69,25 @@ public class Connection
 
                 }
             }
-        });
-
-        // await _openChannel.Reader.ReadAsync();
-        queue.Take();
+        }, TaskCreationOptions.LongRunning);
     }
-
+    
     internal void OpenEnd()
     {
         queue.Add(null);
         // _openChannel.Writer.WriteAsync(0);
     }
-    
+
     internal void SendFrame(AMQPFrame frame)
     {
         _client.Client.Send(frame.ToBytes());
     }
-    
+
+    internal void Send(byte[] bytes)
+    {
+        _client.Client.Send(bytes);
+    }
+
     private async Task<AMQPFrame> ReadFrameAsync()
     {
         var header = await ReadAsync(7);
