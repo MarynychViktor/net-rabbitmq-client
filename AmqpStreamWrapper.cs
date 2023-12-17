@@ -35,15 +35,34 @@ public class AmqpStreamWrapper
 
     public async Task<LowLevelAmqpFrame> ReadFrameAsync()
     {
+        Console.WriteLine($"Before read header");
         var (type, channel, size) = await ReadFrameHeader();
         var frameBody = await ReadAsync(size);
         // Read EOF frame
         await ReadAsync(1);
+        var frameType = (FrameType)type;
 
-        if (type == 1)
+        if (frameType == FrameType.Method)
         {
-            var (classId, methodId) = MethodProps(frameBody[..4]);
+            using var reader = new BinReader(frameBody[..4]);
+            var classId = reader.ReadInt16();
+            var methodId = reader.ReadInt16();
+
             return new LowLevelAmqpMethodFrame(channel, classId, methodId, frameBody);
+        }
+        else if (frameType == FrameType.ContentHeader)
+        {
+            using var reader = new BinReader(frameBody);
+            var classId = reader.ReadInt16();
+            var weight = reader.ReadInt16();
+            var bodyLength = reader.ReadInt64();
+            var propsList = reader.ReadBytes(frameBody.Length - 12);
+
+            return new LowLevelAmqpHeaderFrame(channel, classId, bodyLength, propsList);
+        }
+        else if (frameType == FrameType.Body)
+        {
+            return new LowLevelAmqpBodyFrame(channel, frameBody);
         }
         else
         {
@@ -51,20 +70,11 @@ public class AmqpStreamWrapper
         }
     }
 
-    private (short classId, short methodId) MethodProps(byte [] body)
-    {
-        var reader = new BinReader(body);
-        var classId = reader.ReadInt16();
-        var methodId = reader.ReadInt16();
-
-        return (classId, methodId);
-    }
-
     private async Task<(byte Type, short Channel, int Size)> ReadFrameHeader()
     {
         var header = await ReadAsync(FRAME_HEADER_SIZE);
 
-        var reader = new BinReader(header);
+        using var reader = new BinReader(header);
         var type = reader.ReadByte();
         var channel = reader.ReadInt16();
         var size = reader.ReadInt32();

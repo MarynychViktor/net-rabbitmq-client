@@ -33,11 +33,18 @@ public class LowLevelAmqpMethodFrame : LowLevelAmqpFrame
 {
     public short ClassId { get; }
     public short MethodId { get; }
-
+    public LowLevelAmqpHeaderFrame? HeaderFrame { get; set; }
+    public byte[]? Body { get; set; }
+    
     public LowLevelAmqpMethodFrame(short channel, short classId, short methodId,  byte[] payload) : base(channel, payload, FrameType.Method)
     {
         ClassId = classId;
         MethodId = methodId;
+    }
+
+    public bool HasBody()
+    {
+        return AmpqMethodMap.HasBody(ClassId, MethodId);
     }
 
     public T castTo<T>()  where T: Method, new()

@@ -20,6 +20,7 @@ public class InternalConnection
     private int _channelId;
     private Dictionary<int, IAmqpChannel> _channels = new();
     private AmqpStreamWrapper _amqpStreamWrapper;
+    public Dictionary<string, Action<LowLevelAmqpMethodFrame>> BasicConsumers = new();
 
     // FIXME: concurrent queue? or something better in general
     private Dictionary<short, ConcurrentQueue<TaskCompletionSource<LowLevelAmqpMethodFrame>>> _methodWaitQueue = new()
@@ -108,9 +109,14 @@ public class InternalConnection
         var method = new ChannelOpenMethod();
         short channelId = NextChannelId();
         await SendMethodAsync<ChannelOpenOkMethod>(channelId, method);
+        var channel = new Channel(this, channelId);
 
-        return new Channel(this, channelId);
+        _channels.Add(channelId, channel);
+        
+        return channel;
     }
+
+    private Dictionary<short, List<LowLevelAmqpMethodFrame>> pendingFrames = new();
     
     private void SpawnIncomingListener()
     {
@@ -122,13 +128,30 @@ public class InternalConnection
                 // FIXME: cancellation
                 while (true)
                 {
+                    Console.WriteLine($">>>>Wait for new  frame...");
                     var frame = await _amqpStreamWrapper.ReadFrameAsync();
+                    Console.WriteLine($"Received frame {frame.Type}");
 
                     switch (frame.Type)
                     {
                         case FrameType.Method:
                             var methodFrame = (LowLevelAmqpMethodFrame)frame;
                             Console.WriteLine($"Received method {methodFrame.ClassId} {methodFrame.MethodId}");
+
+                            if (methodFrame.HasBody())
+                            {
+                                List<LowLevelAmqpMethodFrame> pendingChannelFrames;
+                                if (!pendingFrames.TryGetValue(methodFrame.Channel, out pendingChannelFrames))
+                                {
+                                    pendingChannelFrames = new();
+                                    pendingFrames[methodFrame.Channel] = pendingChannelFrames;
+                                }
+
+                                pendingChannelFrames.Add(methodFrame);
+                                Console.WriteLine($"Method Body wait {methodFrame.ClassId} {methodFrame.MethodId}");
+                                continue;
+                            }
+
                             ConcurrentQueue<TaskCompletionSource<LowLevelAmqpMethodFrame>> queue;
                             TaskCompletionSource<LowLevelAmqpMethodFrame> taskSource;
 
@@ -138,15 +161,18 @@ public class InternalConnection
                                 queue.TryDequeue(out taskSource)
                             )
                             {
+                                Console.WriteLine($"***[Loop] before {methodFrame.Payload.Length}");
                                 taskSource.SetResult(methodFrame);
-                                continue;
+                                Console.WriteLine($"***[Loop] after {methodFrame.Payload.Length}");
+                                break;
                             }
                             else
                             {
+                                Console.WriteLine("Method HandleFrameAsync");
                                 _channels[methodFrame.Channel].HandleFrameAsync(methodFrame);
                             }
 
-
+                            Console.WriteLine("Method NotImplementedException");
                             throw new NotImplementedException("Not impelemented part");
 
                             var channel = _channels.ContainsKey(frame.Channel)
@@ -154,8 +180,34 @@ public class InternalConnection
                                 : throw new Exception($"Invalid channel: {frame.Channel}");
                             await channel.HandleMethodFrameAsync(frame.Payload);
                             break;
+                        case FrameType.ContentHeader:
+                            Console.WriteLine("ContentHeader branch");
+                            var headerFrame = (LowLevelAmqpHeaderFrame)frame;
+                            var lastMethodWoHeader = pendingFrames[headerFrame.Channel].Last();
+                            lastMethodWoHeader.HeaderFrame = headerFrame;
+                            continue;
+                        case FrameType.Body:
+                            Console.WriteLine("Body branch");
+                            var bodyFrame = (LowLevelAmqpBodyFrame)frame;
+                            var lastMethodWoBody = pendingFrames[bodyFrame.Channel].Last();
 
+                            if (lastMethodWoBody.Body == null)
+                            {
+                                lastMethodWoBody.Body = bodyFrame.Payload;
+                            }
+                            else
+                            {
+                                lastMethodWoBody.Body = lastMethodWoBody.Body.Concat(bodyFrame.Payload).ToArray();
+                            }
 
+                            if (lastMethodWoBody.HeaderFrame.BodyLength >= lastMethodWoBody.Body.Length)
+                            {
+                                pendingFrames[bodyFrame.Channel].Remove(lastMethodWoBody);
+                            }
+
+                            Console.WriteLine($"Received method body frame {lastMethodWoBody}");
+                            _channels[lastMethodWoBody.Channel].HandleFrameAsync(lastMethodWoBody);
+                            continue;
                         default:
                             throw new Exception($"Not matched type {frame.Type}");
                     }
@@ -163,8 +215,12 @@ public class InternalConnection
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Listener failed with : {e}");
+                Console.WriteLine($"-------------------Listener failed with : {e}");
                 throw;
+            }
+            finally
+            {
+                Console.WriteLine($"-------------------Listener exited");
             }
         });
     }
@@ -178,7 +234,8 @@ public class InternalConnection
 
     internal async Task<TResponse> SendMethodAsync<TResponse>(short channelId, Method method) where TResponse: Method, new()
     {
-        var taskSource = new TaskCompletionSource<LowLevelAmqpMethodFrame>();
+        var taskSource = new TaskCompletionSource<LowLevelAmqpMethodFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
+        // var taskSource = new TaskCompletionSource<LowLevelAmqpMethodFrame>();
         await SendMethodAsync(channelId, method);
         ConcurrentQueue<TaskCompletionSource<LowLevelAmqpMethodFrame>> sourcesQueue;
 
