@@ -1,10 +1,8 @@
 namespace AMQPClient.Methods.Channels;
 
-public class OpenMethod : Method
+[MethodDef(classId: 20, methodId: 10)]
+public class ChannelOpenMethod : Method
 {
-    public short ClassId => 20;
-    public short MethodId => 10;
-
     [ShortStringField(0)]
     public string Reserved1 { get; set; } = "";
 }

@@ -1,5 +1,3 @@
-using System.Text;
-
 namespace AMQPClient.Methods.Connection;
 
 [MethodDef(classId: 10, methodId: 11)]

@@ -19,7 +19,7 @@ public class LowLevelAmqpFrame
     public byte[] ToBytes()
     {
         var writer = new BinWriter();
-        writer.Write((byte)Type);
+        writer.Write((byte)1);
         writer.Write(Channel);
         writer.Write(Payload.Length);
         writer.Write(Payload);

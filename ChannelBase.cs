@@ -7,12 +7,12 @@ namespace AMQPClient;
 
 public abstract class ChannelBase : IAmqpChannel
 {
-    protected readonly Connection2 Connection2;
-    protected short ChannelId;
+    protected readonly InternalConnection Connection;
+    public short ChannelId { get; }
 
-    public ChannelBase(Connection2 connection2, short id)
+    public ChannelBase(InternalConnection connection, short id)
     {
-        Connection2 = connection2;
+        Connection = connection;
         ChannelId = id;
     }
 

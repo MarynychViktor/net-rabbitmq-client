@@ -11,13 +11,13 @@ public class Channel : ChannelBase
 {
     private BlockingCollection<object> queue = new ();
 
-    public Channel(Connection2 connection2, short id) : base(connection2, id)
+    public Channel(InternalConnection connection, short id) : base(connection, id)
     { }
 
     private readonly Dictionary<int, Type> _methodIdTypeMap = new ()
     {
-        {2011, typeof(OpenOkMethod)},
-        {2041, typeof(CloseOkMethod)},
+        {2011, typeof(ChannelOpenOkMethod)},
+        {2041, typeof(ChannelCloseOkMethod)},
         {4011, typeof(ExchangeDeclareOk)},
     };
 
@@ -28,25 +28,25 @@ public class Channel : ChannelBase
 
     internal async Task OpenAsync()
     {
-        var openMethod = new OpenMethod();
-        Connection2.SendFrame(new AMQPFrame()
-        {
-            Type = AMQPFrameType.Method,
-            Channel = ChannelId,
-            Body = Encoder.MarshalMethodFrame(openMethod),
-        });
+        var openMethod = new ChannelOpenMethod();
+        // Connection2.SendFrame(new AMQPFrame()
+        // {
+        //     Type = AMQPFrameType.Method,
+        //     Channel = ChannelId,
+        //     Body = Encoder.MarshalMethodFrame(openMethod),
+        // });
         queue.Take();
     }
 
     public async Task CloseAsync()
     {
         var closeMethod = new CloseMethod();
-        Connection2.SendFrame(new AMQPFrame()
-        {
-            Type = AMQPFrameType.Method,
-            Channel = ChannelId,
-            Body = Encoder.MarshalMethodFrame(closeMethod),
-        });
+        // Connection2.SendFrame(new AMQPFrame()
+        // {
+        //     Type = AMQPFrameType.Method,
+        //     Channel = ChannelId,
+        //     Body = Encoder.MarshalMethodFrame(closeMethod),
+        // });
         queue.Take();
     }
 
@@ -74,7 +74,7 @@ public class Channel : ChannelBase
         return Task.CompletedTask;
     }
 
-    private void HandleMethod(OpenOkMethod m)
+    private void HandleMethod(ChannelOpenOkMethod m)
     {
         queue.Add(null);
     }
@@ -85,12 +85,12 @@ public class Channel : ChannelBase
         {
             Name = name
         };
-        Connection2.SendFrame(new AMQPFrame()
-        {
-            Type = AMQPFrameType.Method,
-            Channel = ChannelId,
-            Body = Encoder.MarshalMethodFrame(declareMethod),
-        });
+        // Connection2.SendFrame(new AMQPFrame()
+        // {
+        //     Type = AMQPFrameType.Method,
+        //     Channel = ChannelId,
+        //     Body = Encoder.MarshalMethodFrame(declareMethod),
+        // });
         queue.Take();
     }
     
@@ -100,7 +100,7 @@ public class Channel : ChannelBase
         queue.Add(null);
     }
 
-    private void HandleMethod(CloseOkMethod m)
+    private void HandleMethod(ChannelCloseOkMethod m)
     {
         queue.Add(null);
     }

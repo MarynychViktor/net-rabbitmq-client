@@ -24,7 +24,7 @@ public class Connection2
 
     public Connection2()
     {
-        _channels.Add(0, new DefaultAmqpChannel(this));
+        // _channels.Add(0, new DefaultAmqpChannel(this));
     }
 
     private short NextChannelId()
@@ -33,14 +33,14 @@ public class Connection2
         return (short)_channelId;
     }
     
-    public async Task<Channel> CreateChannelAsync()
-    {
-        var channel = new Channel(this, NextChannelId());
-        _channels.Add(_channelId, channel);
-        await channel.OpenAsync();
-
-        return channel;
-    }
+    // public async Task<Channel> CreateChannelAsync()
+    // {
+    //     var channel = new Channel(this, NextChannelId());
+    //     _channels.Add(_channelId, channel);
+    //     await channel.OpenAsync();
+    //
+    //     return channel;
+    // }
 
     public async Task OpenAsync()
     {

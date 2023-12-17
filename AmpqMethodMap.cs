@@ -1,3 +1,4 @@
+using AMQPClient.Methods.Channels;
 using AMQPClient.Methods.Connection;
 
 namespace AMQPClient;
@@ -10,7 +11,16 @@ public static class AmpqMethodMap
         {1030, typeof(TuneMethod)},
         {1041, typeof(OpenOkMethod)},
         {1050, typeof(ConnectionClose)},
+        {2010, typeof(ChannelOpenMethod)},
+        {2011, typeof(ChannelOpenOkMethod)},
     };
+
+    private static readonly IReadOnlyList<Type> ResponseMethods = new List<Type>()
+    {
+        typeof(ChannelOpenOkMethod),
+    };
+
+    public static bool IsAsyncResponse(short classId, short methodId) => ResponseMethods.Contains(GetMethodType(classId, methodId));
 
     public static Type GetMethodType(short classId, short methodId)
     {

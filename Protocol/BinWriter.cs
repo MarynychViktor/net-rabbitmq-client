@@ -101,6 +101,8 @@ public class BinWriter : BinaryWriter
                 Write('F');
                 WriteFieldTable(d);
                 break;
+            default:
+                throw new Exception("failed to write");
         }
     }
 

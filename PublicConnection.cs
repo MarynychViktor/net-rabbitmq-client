@@ -16,4 +16,9 @@ public class PublicConnection
 
         return new PublicConnection(internalConnection);
     }
+
+    public Task<Channel> OpenChannelAsync()
+    {
+        return _internalConnection.OpenChannelAsync();
+    }
 }

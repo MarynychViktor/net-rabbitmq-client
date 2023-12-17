@@ -26,7 +26,7 @@ public class DefaultAmqpChannel : ChannelBase
 
     public void SendProtocolHeader()
     {
-        Connection2.Send(Encoding.ASCII.GetBytes("AMQP").Concat(new byte[] { 0, 0, 9, 1 }).ToArray());
+        // Connection.Send(Encoding.ASCII.GetBytes("AMQP").Concat(new byte[] { 0, 0, 9, 1 }).ToArray());
     }
 
     private void HandleMethod(StartMethod m)
@@ -52,7 +52,7 @@ public class DefaultAmqpChannel : ChannelBase
             Body = bytes
         };
 
-        Connection2.SendFrame(frame);
+        // Connection.SendFrame(frame);
     }
       
     private void HandleMethod(TuneMethod m)
@@ -63,28 +63,28 @@ public class DefaultAmqpChannel : ChannelBase
             Heartbeat = m.Heartbeat,
             FrameMax = m.FrameMax,
         };
-        Connection2.SendFrame(new AMQPFrame()
-        {
-            Type = AMQPFrameType.Method,
-            Channel = 0,
-            Body = Encoder.MarshalMethodFrame(tuneOkMethod)
-        });
-        
-        var openMethod = new OpenMethod()
-        {
-            VirtualHost = "my_vhost"
-        };
-        Connection2.SendFrame(new AMQPFrame()
-        {
-            Type = AMQPFrameType.Method,
-            Channel = 0,
-            Body =  Encoder.MarshalMethodFrame(openMethod)
-        });
+        // Connection.SendFrame(new AMQPFrame()
+        // {
+        //     Type = AMQPFrameType.Method,
+        //     Channel = 0,
+        //     Body = Encoder.MarshalMethodFrame(tuneOkMethod)
+        // });
+        //
+        // var openMethod = new OpenMethod()
+        // {
+        //     VirtualHost = "my_vhost"
+        // };
+        // Connection.SendFrame(new AMQPFrame()
+        // {
+        //     Type = AMQPFrameType.Method,
+        //     Channel = 0,
+        //     Body =  Encoder.MarshalMethodFrame(openMethod)
+        // });
     }
 
     private void HandleMethod(OpenOkMethod m)
     {
-        Connection2.OpenEnd();
+        // Connection.OpenEnd();
     }
 
     private void HandleMethod(ConnectionClose m)
@@ -93,7 +93,7 @@ public class DefaultAmqpChannel : ChannelBase
         Console.WriteLine(m);
     }
 
-    public DefaultAmqpChannel(Connection2 connection2) : base(connection2, 0)
+    public DefaultAmqpChannel(InternalConnection connection) : base(connection, 0)
     {
     }
 }
