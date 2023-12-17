@@ -1,10 +1,8 @@
 namespace AMQPClient.Methods.Exchanges;
-
+// reserved1: Short, name: ShortStr, ty: ShortStr, flags: Byte, props: PropTable
+[MethodDef(classId: 40, methodId: 10)]
 public class ExchangeDeclare : Method
 {
-    public short ClassId { get; } = 40;
-    public short MethodId { get; } = 10;
-
     [ShortField(0)]
     public short Reserved1 { get; set; }
 
@@ -15,14 +13,14 @@ public class ExchangeDeclare : Method
     public string Type { get; set; } = "direct";
 
     [ByteField(3)]
-    public byte Passive { get; set; } = 0;
+    public byte Flags { get; set; } = 0;
     //
     // [ByteField(4)]
     // public byte Durable { get; set; } = 0;
-    //     
+    //      
     // [ByteField(5)]
     // public byte AutoDelete { get; set; } = 0;
-    //         
+    //          
     // [ByteField(6)]
     // public byte Internal { get; set; } = 0;
     //

@@ -50,7 +50,14 @@ public class Encoder
                     break;
                 case ShortStringField attr:
                     // Console.WriteLine($"Write attribute {property.Name} {(string)property.GetValue(methodFrame)}");
-                    writer.WriteShortStr((string)property.GetValue(methodFrame));
+                    try
+                    {
+                        writer.WriteShortStr((string)property.GetValue(methodFrame));
+                    }
+                    catch (Exception e)
+                    {
+                        throw;
+                    }
                     break;
                 case LongStringField attr:
                     // Console.WriteLine($"Write attribute {property.Name} {(string)property.GetValue(methodFrame)}");

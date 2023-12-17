@@ -12,8 +12,20 @@ namespace AMQPClient;
 
 public class InternalConnection
 {
+    private const short DefaultChannelId = 0;
+    private const string Product = "Amqp 0.9.1 client";
+    private const string Platform = ".Net Core";
+    private const string Copyright = "Lorem ipsum";
+    private const string Information = "Lorem ipsum";
+    private int _channelId;
     private Dictionary<int, IAmqpChannel> _channels = new();
     private AmqpStreamWrapper _amqpStreamWrapper;
+
+    // FIXME: concurrent queue? or something better in general
+    private Dictionary<short, ConcurrentQueue<TaskCompletionSource<LowLevelAmqpMethodFrame>>> _methodWaitQueue = new()
+    {
+        { DefaultChannelId, new() }
+    };
 
     public async Task OpenAmqpConnectionAsync()
     {
@@ -25,7 +37,7 @@ public class InternalConnection
 
     public async Task HandshakeAsync()
     {
-        var readNextMethodFrame = async () =>
+        async Task<LowLevelAmqpMethodFrame> ReadNextMethodFrame()
         {
             var nextFrame = await _amqpStreamWrapper.ReadFrameAsync();
 
@@ -36,36 +48,34 @@ public class InternalConnection
             }
 
             return (LowLevelAmqpMethodFrame)await _amqpStreamWrapper.ReadFrameAsync();
-        };
+        }
 
         var protocolHeader = Encoding.ASCII.GetBytes("AMQP").Concat(new byte[] { 0, 0, 9, 1 }).ToArray();
         await _amqpStreamWrapper.SendRawAsync(protocolHeader);
 
-        var nextFrame = await readNextMethodFrame();
+        var nextFrame = await ReadNextMethodFrame();
         // TODO: Do something
-        var startMethod = nextFrame.castTo<StartMethod>();
-        Console.WriteLine($"Received start method {startMethod}");
+        nextFrame.castTo<StartMethod>();
 
         // FIXME: review with dynamic params
         var startOkMethod = new StartOkMethod()
         {
             ClientProperties = new Dictionary<string, object>()
             {
-                { "product", "amqp0.9.1 client" },
-                { "platform", "csharp lang" },
-                { "copyright", "lorem ipsum" },
-                { "information", "lorem ipsum" },
+                { "product", Product },
+                { "platform", Platform },
+                { "copyright", Copyright },
+                { "information", Information },
             },
             Mechanism = "PLAIN",
             // Response = "\x00" + "user" + "\x00" + "password",
             Response = $"{'\x00'}user{'\x00'}password",
             Locale = "en_US",
         };
-        await SendConnectionMethodAsync(startOkMethod);
+        await SendMethodAsync(DefaultChannelId, startOkMethod);
 
-        nextFrame = await readNextMethodFrame();
+        nextFrame = await ReadNextMethodFrame();
         var tuneMethod = nextFrame.castTo<TuneMethod>();
-        Console.WriteLine($"Received TuneMethod {tuneMethod}");
 
         var tuneOkMethod = new TuneOkMethod()
         {
@@ -73,20 +83,20 @@ public class InternalConnection
             Heartbeat = tuneMethod.Heartbeat,
             FrameMax = tuneMethod.FrameMax,
         };
-        await SendConnectionMethodAsync(tuneOkMethod);
+        await SendMethodAsync(DefaultChannelId, tuneOkMethod);
 
         var openMethod = new OpenMethod()
         {
             VirtualHost = "my_vhost"
         };
-        await SendConnectionMethodAsync(openMethod);
+        await SendMethodAsync(DefaultChannelId, openMethod);
 
-        nextFrame = await readNextMethodFrame();
-        var openOkMethod = nextFrame.castTo<OpenOkMethod>();
-        Console.WriteLine($"Received open ok {openOkMethod}");
+        nextFrame = await ReadNextMethodFrame();
+        nextFrame.castTo<OpenOkMethod>();
+
+        Console.WriteLine("[InternalConnection]Handshake completed");
     }
 
-    private int _channelId;
     private short NextChannelId()
     {
         Interlocked.Increment(ref _channelId);
@@ -97,8 +107,7 @@ public class InternalConnection
     {
         var method = new ChannelOpenMethod();
         short channelId = NextChannelId();
-        var responseMethod = await SendMethodAsync<ChannelOpenOkMethod>(channelId, method);
-        Console.WriteLine($"[OpenChannelAsync] Response method: {responseMethod.ToString()}");
+        await SendMethodAsync<ChannelOpenOkMethod>(channelId, method);
 
         return new Channel(this, channelId);
     }
@@ -107,69 +116,70 @@ public class InternalConnection
     {
         Task.Run(async () =>
         {
-            // FIXME: cancellation
-            while (true)
+            try
             {
-                var frame = await _amqpStreamWrapper.ReadFrameAsync();
 
-                switch (frame.Type)
+                // FIXME: cancellation
+                while (true)
                 {
-                    case FrameType.Method:
-                        var methodFrame = (LowLevelAmqpMethodFrame)frame;
-                        ConcurrentQueue<TaskCompletionSource<LowLevelAmqpMethodFrame>> queue;
-                        TaskCompletionSource<LowLevelAmqpMethodFrame> taskSource;
+                    var frame = await _amqpStreamWrapper.ReadFrameAsync();
 
-                        if (
-                            AmpqMethodMap.IsAsyncResponse(methodFrame.ClassId, methodFrame.MethodId) &&
-                            _methodWaitQueue.TryGetValue(methodFrame.Channel, out queue) &&
-                            queue.TryDequeue(out taskSource)
-                        ) {
-                            taskSource.SetResult(methodFrame);
-                            continue;
-                        }
-                        
+                    switch (frame.Type)
+                    {
+                        case FrameType.Method:
+                            var methodFrame = (LowLevelAmqpMethodFrame)frame;
+                            Console.WriteLine($"Received method {methodFrame.ClassId} {methodFrame.MethodId}");
+                            ConcurrentQueue<TaskCompletionSource<LowLevelAmqpMethodFrame>> queue;
+                            TaskCompletionSource<LowLevelAmqpMethodFrame> taskSource;
 
-                        throw new NotImplementedException("Not impelemented part");
-                        
-                        var channel = _channels.ContainsKey(frame.Channel)
-                            ? _channels[frame.Channel]
-                            : throw new Exception($"Invalid channel: {frame.Channel}");
-                        await channel.HandleMethodFrameAsync(frame.Payload);
-                        break;
-                        
-                    
-                    default:
-                        throw new Exception($"Not matched type {frame.Type}");
+                            if (
+                                AmpqMethodMap.IsAsyncResponse(methodFrame.ClassId, methodFrame.MethodId) &&
+                                _methodWaitQueue.TryGetValue(methodFrame.Channel, out queue) &&
+                                queue.TryDequeue(out taskSource)
+                            )
+                            {
+                                taskSource.SetResult(methodFrame);
+                                continue;
+                            }
+                            else
+                            {
+                                _channels[methodFrame.Channel].HandleFrameAsync(methodFrame);
+                            }
 
+
+                            throw new NotImplementedException("Not impelemented part");
+
+                            var channel = _channels.ContainsKey(frame.Channel)
+                                ? _channels[frame.Channel]
+                                : throw new Exception($"Invalid channel: {frame.Channel}");
+                            await channel.HandleMethodFrameAsync(frame.Payload);
+                            break;
+
+
+                        default:
+                            throw new Exception($"Not matched type {frame.Type}");
+                    }
                 }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Listener failed with : {e}");
+                throw;
             }
         });
     }
 
-    
-    private Task SendConnectionMethodAsync(Method method)
-    {
-        return SendMethodAsync(0, method);
-    }
-
-    private async Task SendMethodAsync(short channel, Method method)
+    internal Task SendMethodAsync(short channel, Method method)
     {
         // FIXME: if method has body, write it should send multiple raw frames
         var bytes = Encoder.MarshalMethodFrame(method);
-        await _amqpStreamWrapper.SendFrameAsync(new LowLevelAmqpFrame(channel, bytes, FrameType.Method));
+        return _amqpStreamWrapper.SendFrameAsync(new LowLevelAmqpFrame(channel, bytes, FrameType.Method));
     }
 
-    // FIXME: concurrent queue? or something better in general
-    private Dictionary<short, ConcurrentQueue<TaskCompletionSource<LowLevelAmqpMethodFrame>>> _methodWaitQueue = new()
-    {
-        { 0, new() }
-    };
-
-    private async Task<TResponse> SendMethodAsync<TResponse>(short channelId, Method method) where TResponse: Method, new()
+    internal async Task<TResponse> SendMethodAsync<TResponse>(short channelId, Method method) where TResponse: Method, new()
     {
         var taskSource = new TaskCompletionSource<LowLevelAmqpMethodFrame>();
         await SendMethodAsync(channelId, method);
-
         ConcurrentQueue<TaskCompletionSource<LowLevelAmqpMethodFrame>> sourcesQueue;
 
         if (!_methodWaitQueue.TryGetValue(channelId, out sourcesQueue))
@@ -177,8 +187,8 @@ public class InternalConnection
             sourcesQueue = new();
             _methodWaitQueue.Add(channelId, sourcesQueue);
         }
-        sourcesQueue.Enqueue(taskSource);
 
+        sourcesQueue.Enqueue(taskSource);
         var frame = await taskSource.Task;
 
         return frame.castTo<TResponse>();

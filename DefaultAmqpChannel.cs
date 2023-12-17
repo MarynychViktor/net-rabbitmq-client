@@ -19,6 +19,11 @@ public class DefaultAmqpChannel : ChannelBase
     };
     private BlockingCollection<object> queue = new ();
 
+    public override Task HandleFrameAsync(LowLevelAmqpMethodFrame frame)
+    {
+        throw new NotImplementedException();
+    }
+
     protected override Type GetMethodType(short classId, short methodId)
     {
         return _methodIdTypeMap[classId * 100 + methodId];

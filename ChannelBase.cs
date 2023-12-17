@@ -7,12 +7,12 @@ namespace AMQPClient;
 
 public abstract class ChannelBase : IAmqpChannel
 {
-    protected readonly InternalConnection Connection;
+    protected readonly InternalConnection _connection;
     public short ChannelId { get; }
 
     public ChannelBase(InternalConnection connection, short id)
     {
-        Connection = connection;
+        _connection = connection;
         ChannelId = id;
     }
 
@@ -29,6 +29,8 @@ public abstract class ChannelBase : IAmqpChannel
 
         return Task.CompletedTask;
     }
+
+    public abstract Task HandleFrameAsync(LowLevelAmqpMethodFrame frame);
 
     protected abstract Type GetMethodType(short classId, short methodId);
     

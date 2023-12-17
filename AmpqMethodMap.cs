@@ -1,5 +1,6 @@
 using AMQPClient.Methods.Channels;
 using AMQPClient.Methods.Connection;
+using AMQPClient.Methods.Exchanges;
 
 namespace AMQPClient;
 
@@ -13,11 +14,18 @@ public static class AmpqMethodMap
         {1050, typeof(ConnectionClose)},
         {2010, typeof(ChannelOpenMethod)},
         {2011, typeof(ChannelOpenOkMethod)},
+        // Exchange
+        {4010, typeof(ExchangeDeclare)},
+        {4011, typeof(ExchangeDeclareOk)},
+        {4020, typeof(ExchangeDelete)},
+        {4021, typeof(ExchangeDeleteOk)},
     };
 
     private static readonly IReadOnlyList<Type> ResponseMethods = new List<Type>()
     {
         typeof(ChannelOpenOkMethod),
+        typeof(ExchangeDeclareOk),
+        typeof(ExchangeDeleteOk),
     };
 
     public static bool IsAsyncResponse(short classId, short methodId) => ResponseMethods.Contains(GetMethodType(classId, methodId));

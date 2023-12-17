@@ -21,6 +21,31 @@ public class Channel : ChannelBase
         {4011, typeof(ExchangeDeclareOk)},
     };
 
+    // FIXME: add actual params to method
+    public async Task<string> ExchangeDeclare(string name)
+    {
+        var method = new ExchangeDeclare()
+        {
+            Name = name,
+        };
+        await _connection.SendMethodAsync<ExchangeDeclareOk>(ChannelId, method);
+        return name;
+    }
+
+    public async Task ExchangeDelete(string name)
+    {
+        var method = new ExchangeDelete()
+        {
+            Name = name,
+        };
+        await _connection.SendMethodAsync<ExchangeDeleteOk>(ChannelId, method);
+    }
+
+    public override Task HandleFrameAsync(LowLevelAmqpMethodFrame frame)
+    {
+        throw new NotImplementedException();
+    }
+
     protected override Type GetMethodType(short classId, short methodId)
     {
         return _methodIdTypeMap[classId * 100 + methodId];
