@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Text;
 using AMQPClient.Methods;
 
@@ -5,12 +6,13 @@ namespace AMQPClient.Protocol;
 
 public class Encoder
 {
-    public static byte[] MarshalMethodFrame<T>(T methodFrame) where T : Method, new()
+    public static byte[] MarshalMethodFrame<T>(T methodFrame) where T : Method
     {
 
         var writer = new BinWriter();
-        writer.Write(methodFrame.ClassId);
-        writer.Write(methodFrame.MethodId);
+        var methodAttribute = (MethodDefAttribute) methodFrame.GetType().GetCustomAttribute(typeof(MethodDefAttribute))!;
+        writer.Write(methodAttribute.ClassId);
+        writer.Write(methodAttribute.MethodId);
         // writer.Write(Encoding.ASCII.GetBytes("AMQP"));
         // writer.Write(new byte[] { 0, 0, 9, 1 });
         

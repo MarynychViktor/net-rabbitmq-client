@@ -26,7 +26,7 @@ public class DefaultAmqpChannel : ChannelBase
 
     public void SendProtocolHeader()
     {
-        Connection.Send(Encoding.ASCII.GetBytes("AMQP").Concat(new byte[] { 0, 0, 9, 1 }).ToArray());
+        Connection2.Send(Encoding.ASCII.GetBytes("AMQP").Concat(new byte[] { 0, 0, 9, 1 }).ToArray());
     }
 
     private void HandleMethod(StartMethod m)
@@ -52,7 +52,7 @@ public class DefaultAmqpChannel : ChannelBase
             Body = bytes
         };
 
-        Connection.SendFrame(frame);
+        Connection2.SendFrame(frame);
     }
       
     private void HandleMethod(TuneMethod m)
@@ -63,7 +63,7 @@ public class DefaultAmqpChannel : ChannelBase
             Heartbeat = m.Heartbeat,
             FrameMax = m.FrameMax,
         };
-        Connection.SendFrame(new AMQPFrame()
+        Connection2.SendFrame(new AMQPFrame()
         {
             Type = AMQPFrameType.Method,
             Channel = 0,
@@ -74,7 +74,7 @@ public class DefaultAmqpChannel : ChannelBase
         {
             VirtualHost = "my_vhost"
         };
-        Connection.SendFrame(new AMQPFrame()
+        Connection2.SendFrame(new AMQPFrame()
         {
             Type = AMQPFrameType.Method,
             Channel = 0,
@@ -84,7 +84,7 @@ public class DefaultAmqpChannel : ChannelBase
 
     private void HandleMethod(OpenOkMethod m)
     {
-        Connection.OpenEnd();
+        Connection2.OpenEnd();
     }
 
     private void HandleMethod(ConnectionClose m)
@@ -93,7 +93,7 @@ public class DefaultAmqpChannel : ChannelBase
         Console.WriteLine(m);
     }
 
-    public DefaultAmqpChannel(Connection connection) : base(connection, 0)
+    public DefaultAmqpChannel(Connection2 connection2) : base(connection2, 0)
     {
     }
 }

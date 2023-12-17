@@ -11,7 +11,7 @@ public class Channel : ChannelBase
 {
     private BlockingCollection<object> queue = new ();
 
-    public Channel(Connection connection, short id) : base(connection, id)
+    public Channel(Connection2 connection2, short id) : base(connection2, id)
     { }
 
     private readonly Dictionary<int, Type> _methodIdTypeMap = new ()
@@ -29,7 +29,7 @@ public class Channel : ChannelBase
     internal async Task OpenAsync()
     {
         var openMethod = new OpenMethod();
-        Connection.SendFrame(new AMQPFrame()
+        Connection2.SendFrame(new AMQPFrame()
         {
             Type = AMQPFrameType.Method,
             Channel = ChannelId,
@@ -41,7 +41,7 @@ public class Channel : ChannelBase
     public async Task CloseAsync()
     {
         var closeMethod = new CloseMethod();
-        Connection.SendFrame(new AMQPFrame()
+        Connection2.SendFrame(new AMQPFrame()
         {
             Type = AMQPFrameType.Method,
             Channel = ChannelId,
@@ -85,7 +85,7 @@ public class Channel : ChannelBase
         {
             Name = name
         };
-        Connection.SendFrame(new AMQPFrame()
+        Connection2.SendFrame(new AMQPFrame()
         {
             Type = AMQPFrameType.Method,
             Channel = ChannelId,

@@ -2,11 +2,9 @@ using System.Text;
 
 namespace AMQPClient.Methods.Connection;
 
+[MethodDef(classId: 10, methodId: 30)]
 public class TuneMethod : Method
 {
-    public short ClassId => 10;
-    public short MethodId => 30;
-
     [ShortField(0)]
     public short ChannelMax { get; set; }
 
@@ -15,15 +13,4 @@ public class TuneMethod : Method
 
     [ShortField(2)]
     public short Heartbeat { get; set; }
-
-
-    public override string ToString()
-    {
-        var builder = new StringBuilder();
-        builder.AppendLine($"ChannelMax: {ChannelMax}");
-        builder.AppendLine($"FrameMax: {FrameMax}");
-        builder.AppendLine($"Heartbeat: {Heartbeat}");
-       
-        return builder.ToString();
-    }
 }
