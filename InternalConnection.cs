@@ -5,11 +5,11 @@ using AMQPClient.Methods;
 using AMQPClient.Methods.Channels;
 using AMQPClient.Methods.Connection;
 using AMQPClient.Protocol;
-using Decoder = AMQPClient.Protocol.Decoder;
 using Encoder = AMQPClient.Protocol.Encoder;
 
 namespace AMQPClient;
 
+// FIXME: handle errors
 public class InternalConnection
 {
     private const short DefaultChannelId = 0;

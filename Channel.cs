@@ -3,8 +3,6 @@ using AMQPClient.Methods.Basic;
 using AMQPClient.Methods.Channels;
 using AMQPClient.Methods.Exchanges;
 using AMQPClient.Protocol;
-using Encoder = AMQPClient.Protocol.Encoder;
-using Chan = System.Threading.Channels;
 
 namespace AMQPClient;
 
@@ -24,14 +22,41 @@ public class Channel : ChannelBase
     };
 
     // FIXME: add actual params to method
-    public async Task<string> ExchangeDeclare(string name)
+    public async Task ExchangeDeclare(string name, bool passive = false, bool durable = false, bool autoDelete = false, bool internal_only = false, bool nowait = false)
     {
+        var flags = ExchangeDeclareFlags.None;
+        if (passive)
+        {
+            flags &= ExchangeDeclareFlags.Passive;
+        }
+
+        if (durable)
+        {
+            flags &= ExchangeDeclareFlags.Durable;
+        }
+
+        if (autoDelete)
+        {
+            flags &= ExchangeDeclareFlags.AutoDelete;
+        }
+
+        if (internal_only)
+        {
+            flags &= ExchangeDeclareFlags.Internal;
+        }
+
+        if (nowait)
+        {
+            // FIXME: implement nowait
+            // flags &= ExchangeDeclareFlags.NoWait;
+        }
+
         var method = new ExchangeDeclare()
         {
             Name = name,
+            Flags = (byte) flags,
         };
         await _connection.SendMethodAsync<ExchangeDeclareOk>(ChannelId, method);
-        return name;
     }
 
     public async Task ExchangeDelete(string name)

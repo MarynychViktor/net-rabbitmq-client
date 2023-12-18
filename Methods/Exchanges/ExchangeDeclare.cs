@@ -30,3 +30,14 @@ public class ExchangeDeclare : Method
     [PropertiesTableField(8)]
     public Dictionary<string, object> Arguments { get; set; } = new ();
 }
+
+[Flags]
+public enum ExchangeDeclareFlags
+{
+    None = 0,
+    Passive = 1,
+    Durable = 2,
+    AutoDelete = 3,
+    Internal = 4,
+    NoWait = 5,
+}

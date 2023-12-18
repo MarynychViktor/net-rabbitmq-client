@@ -1,23 +1,23 @@
 namespace AMQPClient;
 
-public class PublicConnection
+public class Connection
 {
     private readonly InternalConnection _internalConnection;
 
-    private PublicConnection(InternalConnection internalConnection)
+    private Connection(InternalConnection internalConnection)
     {
         _internalConnection = internalConnection;
     }
 
-    public static async Task<PublicConnection> OpenAsync()
+    public static async Task<Connection> OpenAsync()
     {
         var internalConnection = new InternalConnection();
         await internalConnection.OpenAmqpConnectionAsync();
 
-        return new PublicConnection(internalConnection);
+        return new Connection(internalConnection);
     }
 
-    public Task<Channel> OpenChannelAsync()
+    public Task<Channel> CreateChannelAsync()
     {
         return _internalConnection.OpenChannelAsync();
     }
