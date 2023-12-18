@@ -10,13 +10,13 @@ public class Encoder
     {
 
         var writer = new BinWriter();
-        var methodAttribute = (MethodDefAttribute) methodFrame.GetType().GetCustomAttribute(typeof(MethodDefAttribute))!;
+        var methodAttribute = (MethodDefAttribute)methodFrame.GetType().GetCustomAttribute(typeof(MethodDefAttribute))!;
         // Console.WriteLine($"Marshal method {methodFrame.GetType()}, CID {methodAttribute.ClassId} MID {methodAttribute.MethodId}");
         writer.Write(methodAttribute.ClassId);
         writer.Write(methodAttribute.MethodId);
         // writer.Write(Encoding.ASCII.GetBytes("AMQP"));
         // writer.Write(new byte[] { 0, 0, 9, 1 });
-        
+
 
         var propertiesWithAttrs = methodFrame.GetType().GetProperties()
             .Select(info =>
@@ -27,7 +27,7 @@ public class Encoder
             })
             .Where(data => data.FieldAttribute != null)
             .OrderBy(data => data.FieldAttribute.index);
-   
+
         foreach (var (property, attribute) in propertiesWithAttrs)
         {
             switch (attribute)
@@ -50,14 +50,7 @@ public class Encoder
                     break;
                 case ShortStringField attr:
                     // Console.WriteLine($"Write attribute {property.Name} {(string)property.GetValue(methodFrame)}");
-                    try
-                    {
-                        writer.WriteShortStr((string)property.GetValue(methodFrame));
-                    }
-                    catch (Exception e)
-                    {
-                        throw;
-                    }
+                    writer.WriteShortStr((string)property.GetValue(methodFrame));
                     break;
                 case LongStringField attr:
                     // Console.WriteLine($"Write attribute {property.Name} {(string)property.GetValue(methodFrame)}");
