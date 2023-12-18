@@ -24,11 +24,6 @@ public class DefaultAmqpChannel : ChannelBase
         throw new NotImplementedException();
     }
 
-    protected override Type GetMethodType(short classId, short methodId)
-    {
-        return _methodIdTypeMap[classId * 100 + methodId];
-    }
-
     public void SendProtocolHeader()
     {
         // Connection.Send(Encoding.ASCII.GetBytes("AMQP").Concat(new byte[] { 0, 0, 9, 1 }).ToArray());

@@ -174,12 +174,6 @@ public class InternalConnection
 
                             Console.WriteLine("Method NotImplementedException");
                             throw new NotImplementedException("Not impelemented part");
-
-                            var channel = _channels.ContainsKey(frame.Channel)
-                                ? _channels[frame.Channel]
-                                : throw new Exception($"Invalid channel: {frame.Channel}");
-                            await channel.HandleMethodFrameAsync(frame.Payload);
-                            break;
                         case FrameType.ContentHeader:
                             Console.WriteLine("ContentHeader branch");
                             var headerFrame = (LowLevelAmqpHeaderFrame)frame;

@@ -73,7 +73,7 @@ public class Connection2
                         var channel = _channels.ContainsKey(frame.Channel)
                             ? _channels[frame.Channel]
                             : throw new Exception($"Invalid channel: {frame.Channel}");
-                        await channel.HandleMethodFrameAsync(frame.Payload);
+                        // await channel.HandleMethodFrameAsync(frame.Payload);
                         break;
                         
                     
