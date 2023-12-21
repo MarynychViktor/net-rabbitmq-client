@@ -3,7 +3,7 @@ using AMQPClient.Protocol;
 
 namespace AMQPClient;
 
-public class AmqpStreamWrapper
+public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
 {
     private const byte FRAME_HEADER_SIZE = 7;
     private Stream _sourceStream;
@@ -13,19 +13,9 @@ public class AmqpStreamWrapper
         _sourceStream = sourceStream;
     }
 
-    public async Task InvokeMethod(short channel, Method method)
+    public Task SendFrameAsync(LowLevelAmqpFrame frame)
     {
-        // FIXME: if method has body, write it should send multiple raw frames
-        var bytes = Encoder.MarshalMethodFrame(method);
-        var frame = new LowLevelAmqpFrame(channel, bytes, FrameType.Method);
-        
-        await SendRawAsync(frame.ToBytes());
-    }
-    
-
-    public async Task SendFrameAsync(LowLevelAmqpFrame frame)
-    {
-        await SendRawAsync(frame.ToBytes());
+        return SendRawAsync(frame.ToBytes());
     }
 
     public async Task SendRawAsync(byte[] bytes)
@@ -40,6 +30,7 @@ public class AmqpStreamWrapper
         var frameBody = await ReadAsync(size);
         // Read EOF frame
         await ReadAsync(1);
+
         var frameType = (FrameType)type;
 
         if (frameType == FrameType.Method)
@@ -47,27 +38,31 @@ public class AmqpStreamWrapper
             using var reader = new BinReader(frameBody[..4]);
             var classId = reader.ReadInt16();
             var methodId = reader.ReadInt16();
+            var methodInfo = typeof(Decoder).GetMethod("UnmarshalMethodFrame")!;
+            var genericMethod = methodInfo.MakeGenericMethod(AmpqMethodMap.GetMethodType(classId, methodId));
+            var decodedMethod = (Method)genericMethod.Invoke(null, new []{ frameBody });
 
-            return new LowLevelAmqpMethodFrame(channel, classId, methodId, frameBody);
+            return new LowLevelAmqpMethodFrame(channel, decodedMethod);
         }
-        else if (frameType == FrameType.ContentHeader)
+
+        if (frameType == FrameType.ContentHeader)
         {
             using var reader = new BinReader(frameBody);
             var classId = reader.ReadInt16();
             var weight = reader.ReadInt16();
             var bodyLength = reader.ReadInt64();
-            var propsList = reader.ReadBytes(frameBody.Length - 12);
+            var propBytes = reader.ReadBytes(frameBody.Length - 12);
+            var propsList = HeaderProperties.FromRaw(propBytes);
 
             return new LowLevelAmqpHeaderFrame(channel, classId, bodyLength, propsList);
         }
-        else if (frameType == FrameType.Body)
+
+        if (frameType == FrameType.Body)
         {
             return new LowLevelAmqpBodyFrame(channel, frameBody);
         }
-        else
-        {
-            throw new Exception("failed");
-        }
+
+        throw new Exception("failed");
     }
 
     private async Task<(byte Type, short Channel, int Size)> ReadFrameHeader()
@@ -86,7 +81,7 @@ public class AmqpStreamWrapper
     {
         int bytesRead = 0;
         byte[] buffer2 = new byte[size];
-        
+
         while (bytesRead < size)
         {
             var read = await _sourceStream.ReadAsync(buffer2, bytesRead, size - bytesRead, CancellationToken.None);
@@ -99,13 +94,16 @@ public class AmqpStreamWrapper
             bytesRead += read;
         }
 
-        // while (bytesRead < size)
-        // {
-        //     byte[] buffer = new byte[size];
-        //     bytesRead += await _tcpClient.Client.ReceiveAsync(buffer, SocketFlags.None);
-        //     result = result.Concat(buffer).ToArray();
-        // }
-
         return buffer2;
+    }
+
+    public void Dispose()
+    {
+        _sourceStream.Dispose();
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        return _sourceStream.DisposeAsync();
     }
 }

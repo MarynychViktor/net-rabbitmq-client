@@ -2,6 +2,7 @@ using System.Text;
 
 namespace AMQPClient.Protocol;
 
+// FIXME: review with more efficient approach
 public class BinReader : BinaryReader
 {
     private Stream _stream;

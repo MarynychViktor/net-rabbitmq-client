@@ -72,7 +72,7 @@ public class HeaderProperties
         {
             props.DeliveryMode = (MessageDeliveryMode)reader.ReadByte();
             // TODO: review
-            props.Headers = reader.ReadFieldTable();
+            // props.Headers = reader.ReadFieldTable();
         }
                         
         if ((flags & HeaderPropertiesFlags.Priority) != 0)
@@ -204,7 +204,7 @@ public class HeaderProperties
     }
 }
 
-enum MessageDeliveryMode
+public enum MessageDeliveryMode
 {
     NonPersistent = 1,
     Persistent = 2,

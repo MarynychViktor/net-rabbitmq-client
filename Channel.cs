@@ -3,13 +3,14 @@ using AMQPClient.Methods.Basic;
 using AMQPClient.Methods.Channels;
 using AMQPClient.Methods.Exchanges;
 using AMQPClient.Protocol;
+using AMQPClient.Types;
 
 namespace AMQPClient;
 
 public class Channel : ChannelBase
 {
     private BlockingCollection<object> queue = new ();
-    public Dictionary<string, Action<LowLevelAmqpMethodFrame>> BasicConsumers = new();
+    public Dictionary<string, Action<AmqpEnvelope>> BasicConsumers = new();
 
     public Channel(InternalConnection connection, short id) : base(connection, id)
     { }
@@ -93,7 +94,7 @@ public class Channel : ChannelBase
     }
    
     // FIXME: add actual params to method
-    public async Task BasicConsume(string queue, Action<LowLevelAmqpMethodFrame> consumer)
+    public async Task BasicConsume(string queue, Action<AmqpEnvelope> consumer)
     {
         var method = new BasicConsume()
         {
@@ -104,18 +105,43 @@ public class Channel : ChannelBase
         BasicConsumers.Add(response.Tag, consumer);
     }
 
+    public async Task BasicPublish(string queue, Action<AmqpEnvelope> consumer)
+    {
+        var method = new BasicConsume()
+        {
+            Queue = queue,
+        };
+        var response = await _connection.SendMethodAsync<BasicConsumeOk>(ChannelId, method);
+        Console.WriteLine($"Registered consumer with tag{response.Tag}");
+        BasicConsumers.Add(response.Tag, consumer);
+    }
+    
     public override Task HandleFrameAsync(LowLevelAmqpMethodFrame frame)
     {
-        var methodType = AmpqMethodMap.GetMethodType(frame.ClassId, frame.MethodId);
+        var (classId, methodId) = frame.Method.ClassMethodId();
+        // FIXME:
+        var methodType = AmpqMethodMap.GetMethodType(classId, methodId);
 
         if (methodType == typeof(BasicDeliver))
         {
-            var method = frame.castTo<BasicDeliver>();
+            var method = (BasicDeliver)frame.Method;
             Console.WriteLine("Basic deliver received");
-            BasicConsumers[method.ConsumerTag].Invoke(frame);
+            // BasicConsumers[method.ConsumerTag].Invoke(frame);
             return Task.CompletedTask;
         }
 
+        throw new NotImplementedException();
+    }
+
+    public override Task HandleEnvelopeAsync(AmqpEnvelope envelope)
+    {
+        if (envelope.Method is BasicDeliver method)
+        {
+            Console.WriteLine("Basic deliver received");
+            BasicConsumers[method.ConsumerTag].Invoke(envelope);
+            return Task.CompletedTask;
+        }
+        
         throw new NotImplementedException();
     }
 }

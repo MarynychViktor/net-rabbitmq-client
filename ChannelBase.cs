@@ -1,4 +1,5 @@
 using AMQPClient.Protocol;
+using AMQPClient.Types;
 
 namespace AMQPClient;
 
@@ -14,4 +15,5 @@ public abstract class ChannelBase : IAmqpChannel
     }
 
     public abstract Task HandleFrameAsync(LowLevelAmqpMethodFrame frame);
+    public abstract Task HandleEnvelopeAsync(AmqpEnvelope envelope);
 }

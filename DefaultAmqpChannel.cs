@@ -3,6 +3,7 @@ using System.Reflection;
 using System.Text;
 using AMQPClient.Methods.Connection;
 using AMQPClient.Protocol;
+using AMQPClient.Types;
 using Decoder = AMQPClient.Protocol.Decoder;
 using Encoder = AMQPClient.Protocol.Encoder;
 
@@ -20,6 +21,11 @@ public class DefaultAmqpChannel : ChannelBase
     private BlockingCollection<object> queue = new ();
 
     public override Task HandleFrameAsync(LowLevelAmqpMethodFrame frame)
+    {
+        throw new NotImplementedException();
+    }
+
+    public override Task HandleEnvelopeAsync(AmqpEnvelope envelope)
     {
         throw new NotImplementedException();
     }

@@ -13,6 +13,7 @@ public static class AmpqMethodMap
         {1030, typeof(TuneMethod)},
         {1041, typeof(OpenOkMethod)},
         {1050, typeof(ConnectionClose)},
+        // Channel
         {2010, typeof(ChannelOpenMethod)},
         {2011, typeof(ChannelOpenOkMethod)},
         // Exchange
@@ -28,6 +29,7 @@ public static class AmpqMethodMap
         // Basic
         {6020, typeof(BasicConsume)},
         {6021, typeof(BasicConsumeOk)},
+        {6040, typeof(BasicPublish)},
         {6060, typeof(BasicDeliver)},
     };
 
@@ -44,6 +46,7 @@ public static class AmpqMethodMap
     private static readonly IReadOnlyList<Type> MethodsWithBody = new List<Type>()
     {
         typeof(BasicDeliver),
+        typeof(BasicPublish),
     };
 
     public static bool IsAsyncResponse(short classId, short methodId) => ResponseMethods.Contains(GetMethodType(classId, methodId));

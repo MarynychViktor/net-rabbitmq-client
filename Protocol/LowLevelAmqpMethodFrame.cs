@@ -31,25 +31,13 @@ public class LowLevelAmqpFrame
 
 public class LowLevelAmqpMethodFrame : LowLevelAmqpFrame
 {
-    public short ClassId { get; }
-    public short MethodId { get; }
     public LowLevelAmqpHeaderFrame? HeaderFrame { get; set; }
     public byte[]? Body { get; set; }
+    public Method Method { get; set; }
     
-    public LowLevelAmqpMethodFrame(short channel, short classId, short methodId,  byte[] payload) : base(channel, payload, FrameType.Method)
+    public LowLevelAmqpMethodFrame(short channel, Method payload) : base(channel, new byte[]{}, FrameType.Method)
     {
-        ClassId = classId;
-        MethodId = methodId;
-    }
-
-    public bool HasBody()
-    {
-        return AmpqMethodMap.HasBody(ClassId, MethodId);
-    }
-
-    public T castTo<T>()  where T: Method, new()
-    {
-        return Decoder.UnmarshalMethodFrame<T>(Payload);
+        Method = payload;
     }
 }
 
@@ -58,4 +46,5 @@ public enum FrameType
     Method = 1,
     ContentHeader = 2,
     Body = 3,
+    Heartbeat = 8,
 }
