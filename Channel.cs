@@ -1,9 +1,11 @@
 using System.Collections.Concurrent;
+using System.Text;
 using AMQPClient.Methods.Basic;
 using AMQPClient.Methods.Channels;
 using AMQPClient.Methods.Exchanges;
 using AMQPClient.Protocol;
 using AMQPClient.Types;
+using Encoder = AMQPClient.Protocol.Encoder;
 
 namespace AMQPClient;
 
@@ -105,15 +107,28 @@ public class Channel : ChannelBase
         BasicConsumers.Add(response.Tag, consumer);
     }
 
-    public async Task BasicPublish(string queue, Action<AmqpEnvelope> consumer)
+    public async Task BasicPublish(string exchange, string routingKey, HeaderProperties properties, String body)
     {
-        var method = new BasicConsume()
+        var method = new BasicPublish()
         {
-            Queue = queue,
+            Exchange = exchange,
+            RoutingKey = routingKey,
         };
-        var response = await _connection.SendMethodAsync<BasicConsumeOk>(ChannelId, method);
-        Console.WriteLine($"Registered consumer with tag{response.Tag}");
-        BasicConsumers.Add(response.Tag, consumer);
+
+        // var properties = new HeaderProperties();
+        // var body = envelope.Payload!.Content;
+        // var methodFrame = new LowLevelAmqpMethodFrame(ChannelId, method);
+        // var headerFrame = new LowLevelAmqpHeaderFrame(ChannelId, method.ClassMethodId().Item1, body.Length, properties);
+        // var bodyFrame = new LowLevelAmqpBodyFrame(ChannelId, body);
+
+        var envelopePayload = new AmqpEnvelopePayload(properties, Encoding.UTF8.GetBytes(body));
+        var envelope = new AmqpEnvelope(method, envelopePayload);
+
+        await _connection.SendEnvelopeAsync(ChannelId, envelope);
+
+        // var response = await _connection.SendMethodAsync<BasicConsumeOk>(ChannelId, method);
+        // Console.WriteLine($"Registered consumer with tag{response.Tag}");
+        // BasicConsumers.Add(response.Tag, consumer);
     }
     
     public override Task HandleFrameAsync(LowLevelAmqpMethodFrame frame)

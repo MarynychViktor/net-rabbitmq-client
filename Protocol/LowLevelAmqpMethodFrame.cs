@@ -16,10 +16,10 @@ public class LowLevelAmqpFrame
         Type = type;
     }
 
-    public byte[] ToBytes()
+    public virtual byte[] ToBytes()
     {
         var writer = new BinWriter();
-        writer.Write((byte)1);
+        writer.Write((byte)Type);
         writer.Write(Channel);
         writer.Write(Payload.Length);
         writer.Write(Payload);
@@ -31,13 +31,25 @@ public class LowLevelAmqpFrame
 
 public class LowLevelAmqpMethodFrame : LowLevelAmqpFrame
 {
-    public LowLevelAmqpHeaderFrame? HeaderFrame { get; set; }
-    public byte[]? Body { get; set; }
     public Method Method { get; set; }
     
     public LowLevelAmqpMethodFrame(short channel, Method payload) : base(channel, new byte[]{}, FrameType.Method)
     {
         Method = payload;
+    }
+    
+    
+    public override byte[] ToBytes()
+    {
+        var writer = new BinWriter();
+        writer.Write((byte)Type);
+        writer.Write(Channel);
+        var payload = Encoder.MarshalMethodFrame(Method);
+        writer.Write(payload.Length);
+        writer.Write(payload);
+        writer.Write((byte)0xCE);
+
+        return writer.ToArray();
     }
 }
 

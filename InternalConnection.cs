@@ -221,6 +221,26 @@ public class InternalConnection
         });
     }
 
+    internal async Task SendEnvelopeAsync(short channelId, AmqpEnvelope envelope)
+    {
+        var properties = new HeaderProperties();
+        var body = envelope.Payload!.Content;
+        var methodFrame = new LowLevelAmqpMethodFrame(channelId, envelope.Method);
+
+        await _amqpStreamWrapper.SendFrameAsync(methodFrame);
+
+        if (envelope.Payload == null)
+        {
+            return;
+        }
+
+        var headerFrame = new LowLevelAmqpHeaderFrame(channelId, envelope.Method.ClassMethodId().Item1, body.Length, properties);
+        var bodyFrame = new LowLevelAmqpBodyFrame(channelId, body);
+
+        await _amqpStreamWrapper.SendFrameAsync(headerFrame);
+        await _amqpStreamWrapper.SendFrameAsync(bodyFrame);
+    }
+
     internal Task SendMethodAsync(short channel, Method method)
     {
         // FIXME: if method has body, write it should send multiple raw frames

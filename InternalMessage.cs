@@ -118,7 +118,7 @@ public class HeaderProperties
         return props;
     }
     
-    public  byte[] ToRaw(byte[] bytes)
+    public  byte[] ToRaw()
     {
         using var flagWriter = new BinWriter();
         using var valueWriter = new BinWriter();

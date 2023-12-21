@@ -15,4 +15,20 @@ public class LowLevelAmqpHeaderFrame : LowLevelAmqpFrame
         ClassId = classId;
         Properties = properties;
     }
+
+    public virtual byte[] ToBytes()
+    {
+        var payload = Properties.ToRaw();
+        var writer = new BinWriter();
+        writer.Write((byte)Type);
+        writer.Write(Channel);
+        writer.Write(payload.Length + 12);
+        writer.Write(ClassId);
+        writer.Write((short)0);
+        writer.Write(BodyLength);
+        writer.Write(payload);
+        writer.Write((byte)0xCE);
+
+        return writer.ToArray();
+    }
 }
