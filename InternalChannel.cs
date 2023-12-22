@@ -5,16 +5,15 @@ using AMQPClient.Methods.Channels;
 using AMQPClient.Methods.Exchanges;
 using AMQPClient.Protocol;
 using AMQPClient.Types;
-using Encoder = AMQPClient.Protocol.Encoder;
 
 namespace AMQPClient;
 
-public class Channel : ChannelBase
+public class InternalChannel : ChannelBase
 {
     private BlockingCollection<object> queue = new ();
     public Dictionary<string, Action<AmqpEnvelope>> BasicConsumers = new();
 
-    public Channel(InternalConnection connection, short id) : base(connection, id)
+    public InternalChannel(InternalConnection connection, short id) : base(connection, id)
     { }
 
     private readonly Dictionary<int, Type> _methodIdTypeMap = new ()
@@ -107,7 +106,7 @@ public class Channel : ChannelBase
         BasicConsumers.Add(response.Tag, consumer);
     }
 
-    public async Task BasicPublish(string exchange, string routingKey, HeaderProperties properties, String body)
+    public Task BasicPublishAsync(string exchange, string routingKey, Message message)
     {
         var method = new BasicPublish()
         {
@@ -115,27 +114,31 @@ public class Channel : ChannelBase
             RoutingKey = routingKey,
         };
 
-        // var properties = new HeaderProperties();
-        // var body = envelope.Payload!.Content;
-        // var methodFrame = new LowLevelAmqpMethodFrame(ChannelId, method);
-        // var headerFrame = new LowLevelAmqpHeaderFrame(ChannelId, method.ClassMethodId().Item1, body.Length, properties);
-        // var bodyFrame = new LowLevelAmqpBodyFrame(ChannelId, body);
-
-        var envelopePayload = new AmqpEnvelopePayload(properties, Encoding.UTF8.GetBytes(body));
+        var envelopePayload = new AmqpEnvelopePayload(message.Properties, message.Data);
         var envelope = new AmqpEnvelope(method, envelopePayload);
 
-        await _connection.SendEnvelopeAsync(ChannelId, envelope);
-
-        // var response = await _connection.SendMethodAsync<BasicConsumeOk>(ChannelId, method);
-        // Console.WriteLine($"Registered consumer with tag{response.Tag}");
-        // BasicConsumers.Add(response.Tag, consumer);
+        return _connection.SendEnvelopeAsync(ChannelId, envelope);
     }
+ 
+    // public Task BasicPublish(string exchange, string routingKey, HeaderProperties properties, byte[] body)
+    // {
+    //     var method = new BasicPublish()
+    //     {
+    //         Exchange = exchange,
+    //         RoutingKey = routingKey,
+    //     };
+    //
+    //     var envelopePayload = new AmqpEnvelopePayload(properties, body);
+    //     var envelope = new AmqpEnvelope(method, envelopePayload);
+    //
+    //     return _connection.SendEnvelopeAsync(ChannelId, envelope);
+    // }
     
     public override Task HandleFrameAsync(LowLevelAmqpMethodFrame frame)
     {
         var (classId, methodId) = frame.Method.ClassMethodId();
         // FIXME:
-        var methodType = AmpqMethodMap.GetMethodType(classId, methodId);
+        var methodType = MethodMetaRegistry.GetMethodType(classId, methodId);
 
         if (methodType == typeof(BasicDeliver))
         {

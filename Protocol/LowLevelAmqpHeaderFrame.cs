@@ -16,7 +16,7 @@ public class LowLevelAmqpHeaderFrame : LowLevelAmqpFrame
         Properties = properties;
     }
 
-    public virtual byte[] ToBytes()
+    public override byte[] ToBytes()
     {
         var payload = Properties.ToRaw();
         var writer = new BinWriter();

@@ -39,7 +39,7 @@ public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
             var classId = reader.ReadInt16();
             var methodId = reader.ReadInt16();
             var methodInfo = typeof(Decoder).GetMethod("UnmarshalMethodFrame")!;
-            var genericMethod = methodInfo.MakeGenericMethod(AmpqMethodMap.GetMethodType(classId, methodId));
+            var genericMethod = methodInfo.MakeGenericMethod(MethodMetaRegistry.GetMethodType(classId, methodId));
             var decodedMethod = (Method)genericMethod.Invoke(null, new []{ frameBody });
 
             return new LowLevelAmqpMethodFrame(channel, decodedMethod);
@@ -49,7 +49,7 @@ public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
         {
             using var reader = new BinReader(frameBody);
             var classId = reader.ReadInt16();
-            var weight = reader.ReadInt16();
+            var _weight = reader.ReadInt16();
             var bodyLength = reader.ReadInt64();
             var propBytes = reader.ReadBytes(frameBody.Length - 12);
             var propsList = HeaderProperties.FromRaw(propBytes);

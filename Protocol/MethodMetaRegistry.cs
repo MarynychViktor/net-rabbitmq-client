@@ -5,7 +5,7 @@ using AMQPClient.Methods.Exchanges;
 
 namespace AMQPClient;
 
-public static class AmpqMethodMap
+public static class MethodMetaRegistry
 {
     private static readonly Dictionary<short, Type> _methodIdTypeMap = new ()
     {

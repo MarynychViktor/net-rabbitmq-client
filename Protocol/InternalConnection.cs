@@ -99,18 +99,12 @@ public class InternalConnection
         Console.WriteLine("[InternalConnection]Handshake completed");
     }
 
-    private short NextChannelId()
-    {
-        Interlocked.Increment(ref _channelId);
-        return (short)_channelId;
-    }
-
-    public async Task<Channel> OpenChannelAsync()
+    public async Task<InternalChannel> OpenChannelAsync()
     {
         var method = new ChannelOpenMethod();
         short channelId = NextChannelId();
         await SendMethodAsync<ChannelOpenOkMethod>(channelId, method);
-        var channel = new Channel(this, channelId);
+        var channel = new InternalChannel(this, channelId);
 
         _channels.Add(channelId, channel);
         
@@ -138,7 +132,7 @@ public class InternalConnection
                             var (classId, methodId) = methodFrame.Method.ClassMethodId();
                             Console.WriteLine($"Received method {classId} {methodId}");
 
-                            if (AmpqMethodMap.HasBody(classId, methodId))
+                            if (MethodMetaRegistry.HasBody(classId, methodId))
                             {
                                 Queue<(LowLevelAmqpMethodFrame method, LowLevelAmqpHeaderFrame? header,
                                     byte[]? bodyFrame)> pendingChannelFrames;
@@ -156,7 +150,7 @@ public class InternalConnection
                             TaskCompletionSource<LowLevelAmqpMethodFrame> taskSource;
 
                             if (
-                                AmpqMethodMap.IsAsyncResponse(classId, methodId) &&
+                                MethodMetaRegistry.IsAsyncResponse(classId, methodId) &&
                                 _methodWaitQueue.TryGetValue(methodFrame.Channel, out queue) &&
                                 queue.TryDequeue(out taskSource)
                             )
@@ -166,6 +160,7 @@ public class InternalConnection
                             }
                             else
                             {
+                                Console.WriteLine($"Frame received {methodFrame.Method}");
                                 _channels[methodFrame.Channel].HandleFrameAsync(methodFrame);
                             }
 
@@ -221,6 +216,7 @@ public class InternalConnection
         });
     }
 
+
     internal async Task SendEnvelopeAsync(short channelId, AmqpEnvelope envelope)
     {
         var properties = new HeaderProperties();
@@ -235,9 +231,9 @@ public class InternalConnection
         }
 
         var headerFrame = new LowLevelAmqpHeaderFrame(channelId, envelope.Method.ClassMethodId().Item1, body.Length, properties);
-        var bodyFrame = new LowLevelAmqpBodyFrame(channelId, body);
-
         await _amqpStreamWrapper.SendFrameAsync(headerFrame);
+
+        var bodyFrame = new LowLevelAmqpBodyFrame(channelId, body);
         await _amqpStreamWrapper.SendFrameAsync(bodyFrame);
     }
 
@@ -264,5 +260,11 @@ public class InternalConnection
         var frame = await taskSource.Task;
 
         return (TResponse)frame.Method;
+    }
+    
+    private short NextChannelId()
+    {
+        Interlocked.Increment(ref _channelId);
+        return (short)_channelId;
     }
 }
