@@ -20,9 +20,20 @@ public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
         return SendRawAsync(frame.ToBytes());
     }
 
+    private readonly SemaphoreSlim _sendLock = new(1, 1);
+    
     public async Task SendRawAsync(byte[] bytes)
     {
-        await _sourceStream.WriteAsync(bytes);
+        await _sendLock.WaitAsync();
+
+        try
+        {
+            await _sourceStream.WriteAsync(bytes);
+        }
+        finally
+        {
+            _sendLock.Release();
+        }
     }
     
     public async Task<LowLevelAmqpFrame> ReadFrameAsync()
