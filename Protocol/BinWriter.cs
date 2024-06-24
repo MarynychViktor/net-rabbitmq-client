@@ -151,6 +151,12 @@ public class BinWriter : BinaryWriter
         Write(bytes);
     }
 
+    public void WriteInBigEndian(Span<byte> bytes)
+    {
+        bytes.Reverse();
+        Write(bytes);
+    }
+
     public byte[] ToArray()
     {
         if (_stream is MemoryStream memoryStream)

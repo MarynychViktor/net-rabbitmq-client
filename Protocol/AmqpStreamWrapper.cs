@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using AMQPClient.Methods;
 using AMQPClient.Protocol;
 
@@ -35,12 +36,11 @@ public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
 
         if (frameType == FrameType.Method)
         {
-            using var reader = new BinReader(frameBody[..4]);
-            var classId = reader.ReadInt16();
-            var methodId = reader.ReadInt16();
-            var methodInfo = typeof(Decoder).GetMethod("UnmarshalMethodFrame")!;
+            var classId = BinaryPrimitives.ReadInt16BigEndian(frameBody.AsSpan()[..2]);
+            var methodId = BinaryPrimitives.ReadInt16BigEndian(frameBody.AsSpan()[2..4]);
+            var methodInfo = typeof(Decoder).GetMethod("CreateMethodFrame")!;
             var genericMethod = methodInfo.MakeGenericMethod(MethodMetaRegistry.GetMethodType(classId, methodId));
-            var decodedMethod = (Method)genericMethod.Invoke(null, new []{ frameBody });
+            var decodedMethod = (Method)genericMethod.Invoke(null, [frameBody]);
 
             return new LowLevelAmqpMethodFrame(channel, decodedMethod);
         }

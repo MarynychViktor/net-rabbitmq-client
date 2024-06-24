@@ -2,14 +2,13 @@ namespace AMQPClient.Protocol;
 
 public class Decoder
 {
-    public static T UnmarshalMethodFrame<T>(byte[] body) where T : class, new()
+    public static T CreateMethodFrame<T>(byte[] body) where T : class, new()
     {
         var reader = new BinReader(body);
         // Skip classId
-        var classId = reader.ReadInt16();
+        reader.ReadInt16();
         // Skip methodId
-        var methodId = reader.ReadInt16();
-
+        reader.ReadInt16();
         var method = new T();
 
         var propertiesWithAttrs = typeof(T).GetProperties()
@@ -26,25 +25,25 @@ public class Decoder
         {
             switch (attribute)
             {
-                case ByteField attr:
+                case ByteField:
                     property.SetValue(method, reader.ReadByte());
                     break;
-                case ShortField attr:
+                case ShortField:
                     property.SetValue(method, reader.ReadInt16());
                     break;
-                case IntField attr:
+                case IntField:
                     property.SetValue(method, reader.ReadInt32());
                     break;
-                case LongField attr:
+                case LongField:
                     property.SetValue(method, reader.ReadInt64());
                     break;
-                case PropertiesTableField attr:
+                case PropertiesTableField:
                     property.SetValue(method, reader.ReadFieldTable());
                     break;
-                case LongStringField attr:
+                case LongStringField:
                     property.SetValue(method, reader.ReadLongStr());
                     break;
-                case ShortStringField attr:
+                case ShortStringField:
                     property.SetValue(method, reader.ReadShortStr());
                     break;
                 default:

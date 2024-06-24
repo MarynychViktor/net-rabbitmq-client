@@ -1,3 +1,4 @@
+using System.Buffers.Binary;
 using AMQPClient.Protocol;
 
 namespace AMQPClient;
@@ -120,12 +121,14 @@ public class HeaderProperties
     
     public  byte[] ToRaw()
     {
-        using var flagWriter = new BinWriter();
+        Span<byte> bytes = stackalloc byte[2];
         using var valueWriter = new BinWriter();
         HeaderProperties props = new();
         HeaderPropertiesFlags flags = HeaderPropertiesFlags.None;
-            // (HeaderPropertiesFlags)reader.ReadUInt16();
 
+        // reserve 2 bytes for flags
+        valueWriter.Write(bytes);
+        
         if (props.ContentType != null)
         {
             flags &= HeaderPropertiesFlags.ContentType;
@@ -196,11 +199,11 @@ public class HeaderProperties
         {
             flags &= HeaderPropertiesFlags.UserId;
             valueWriter.WriteShortStr(props.UserId);
-        } 
+        }
 
-        flagWriter.Write(((ushort)flags));
-
-        return flagWriter.ToArray().Concat(valueWriter.ToArray()).ToArray();
+        var result = valueWriter.ToArray();
+        BinaryPrimitives.WriteUInt16LittleEndian(result.AsSpan()[..2], (ushort)flags);
+        return result;
     }
 }
 
