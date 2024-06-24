@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using AMQPClient.Methods;
@@ -13,6 +14,7 @@ namespace AMQPClient;
 // FIXME: handle errors
 public class InternalConnection
 {
+    private readonly ConnectionParams _params;
     private const short DefaultChannelId = 0;
     private const string Product = "Amqp 0.9.1 client";
     private const string Platform = ".Net Core";
@@ -23,15 +25,20 @@ public class InternalConnection
     private AmqpStreamWrapper _amqpStreamWrapper;
     public Dictionary<string, Action<LowLevelAmqpMethodFrame>> BasicConsumers = new();
 
+    public InternalConnection(ConnectionParams @params)
+    {
+        _params = @params;
+    }
+
     // FIXME: concurrent queue? or something better in general
     private Dictionary<short, ConcurrentQueue<TaskCompletionSource<LowLevelAmqpMethodFrame>>> _methodWaitQueue = new()
     {
         { DefaultChannelId, new() }
     };
 
-    public async Task OpenAmqpConnectionAsync()
+    public async Task StartAsync()
     {
-        var tcpClient = new TcpClient("localhost", 5672);
+        var tcpClient = new TcpClient(_params.Host, _params.Port);
         _amqpStreamWrapper = new AmqpStreamWrapper(tcpClient.GetStream());
         await HandshakeAsync();
         SpawnIncomingListener();
@@ -71,7 +78,7 @@ public class InternalConnection
             },
             Mechanism = "PLAIN",
             // Response = "\x00" + "user" + "\x00" + "password",
-            Response = $"{'\x00'}user{'\x00'}password",
+            Response = $"{'\x00'}{_params.User}{'\x00'}{_params.Password}",
             Locale = "en_US",
         };
         await SendMethodAsync(DefaultChannelId, startOkMethod);
@@ -89,7 +96,7 @@ public class InternalConnection
 
         var openMethod = new OpenMethod()
         {
-            VirtualHost = "my_vhost"
+            VirtualHost = _params.Vhost
         };
         await SendMethodAsync(DefaultChannelId, openMethod);
 

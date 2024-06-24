@@ -1,20 +1,22 @@
+using System.Net;
+
 namespace AMQPClient;
 
 public class Connection
 {
-    private readonly InternalConnection _internalConnection;
+    private readonly ConnectionParams _connectionParams;
+    private InternalConnection _internalConnection;
 
-    private Connection(InternalConnection internalConnection)
+    internal Connection(ConnectionParams connectionParams)
     {
-        _internalConnection = internalConnection;
+        _connectionParams = connectionParams;
     }
 
-    public static async Task<Connection> OpenAsync()
+    internal async Task StartAsync()
     {
-        var internalConnection = new InternalConnection();
-        await internalConnection.OpenAmqpConnectionAsync();
-
-        return new Connection(internalConnection);
+        var internalConnection = new InternalConnection(_connectionParams);
+        await internalConnection.StartAsync();
+        _internalConnection = internalConnection;
     }
 
     public Task<InternalChannel> CreateChannelAsync()
