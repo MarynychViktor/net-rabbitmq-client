@@ -1,3 +1,4 @@
+using System.Text;
 using AMQPClient.Methods;
 using AMQPClient.Protocol;
 
@@ -13,6 +14,12 @@ public class AmqpEnvelope
         Method = method;
         Payload = payload;
     }
+    
+    public override string ToString()
+    {
+        return $"Method: {Method} \n" +
+               $"Payload: {Payload}";
+    }
 }
 
 public class AmqpEnvelopePayload
@@ -24,6 +31,12 @@ public class AmqpEnvelopePayload
     {
         Properties = properties;
         Content = content;
+    }
+
+    public override string ToString()
+    {
+        return $"Properties: {Properties} \n" +
+               $"Body: {Encoding.UTF8.GetString(Content)}";
     }
 }
 //

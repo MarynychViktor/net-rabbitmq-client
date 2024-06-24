@@ -6,8 +6,9 @@ namespace AMQPClient;
 
 public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
 {
-    private const byte FRAME_HEADER_SIZE = 7;
-    private Stream _sourceStream;
+    private const byte FrameHeaderSize = 7;
+    private readonly Stream _sourceStream;
+    private byte[]? _frameBody;
 
     public AmqpStreamWrapper(Stream sourceStream)
     {
@@ -23,78 +24,68 @@ public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
     {
         await _sourceStream.WriteAsync(bytes);
     }
-
+    
     public async Task<LowLevelAmqpFrame> ReadFrameAsync()
     {
-        Console.WriteLine($"Before read header");
         var (type, channel, size) = await ReadFrameHeader();
-        var frameBody = await ReadAsync(size);
+        _frameBody = (await ReadAsync(size)).ToArray();
         // Read EOF frame
         await ReadAsync(1);
 
         var frameType = (FrameType)type;
 
-        if (frameType == FrameType.Method)
+        return frameType switch
         {
-            var classId = BinaryPrimitives.ReadInt16BigEndian(frameBody.AsSpan()[..2]);
-            var methodId = BinaryPrimitives.ReadInt16BigEndian(frameBody.AsSpan()[2..4]);
-            var methodInfo = typeof(Decoder).GetMethod("CreateMethodFrame")!;
-            var genericMethod = methodInfo.MakeGenericMethod(MethodMetaRegistry.GetMethodType(classId, methodId));
-            var decodedMethod = (Method)genericMethod.Invoke(null, [frameBody]);
-
-            return new LowLevelAmqpMethodFrame(channel, decodedMethod);
-        }
-
-        if (frameType == FrameType.ContentHeader)
-        {
-            using var reader = new BinReader(frameBody);
-            var classId = reader.ReadInt16();
-            var _weight = reader.ReadInt16();
-            var bodyLength = reader.ReadInt64();
-            var propBytes = reader.ReadBytes(frameBody.Length - 12);
-            var propsList = HeaderProperties.FromRaw(propBytes);
-
-            return new LowLevelAmqpHeaderFrame(channel, classId, bodyLength, propsList);
-        }
-
-        if (frameType == FrameType.Body)
-        {
-            return new LowLevelAmqpBodyFrame(channel, frameBody);
-        }
-
-        throw new Exception("failed");
+            FrameType.Method => ReadMethodFrame(channel),
+            FrameType.ContentHeader => ContentHeaderFrame(channel),
+            FrameType.Body => BodyFrame(channel),
+            _ => throw new Exception("not implemented")
+        };
     }
 
-    private async Task<(byte Type, short Channel, int Size)> ReadFrameHeader()
+    private LowLevelAmqpMethodFrame ReadMethodFrame(short channel)
     {
-        var header = await ReadAsync(FRAME_HEADER_SIZE);
+        var classId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[..2]);
+        var methodId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[2..4]);
+        var methodInfo = typeof(Decoder).GetMethod("CreateMethodFrame")!;
+        var genericMethod = methodInfo.MakeGenericMethod(MethodMetaRegistry.GetMethodType(classId, methodId));
+        var decodedMethod = (Method)genericMethod.Invoke(null, [_frameBody]);
 
-        using var reader = new BinReader(header);
-        var type = reader.ReadByte();
-        var channel = reader.ReadInt16();
-        var size = reader.ReadInt32();
-
-        return (type, channel, size);
+        return new LowLevelAmqpMethodFrame(channel, decodedMethod);
     }
 
-    public async Task<byte[]> ReadAsync(int size)
+    private LowLevelAmqpHeaderFrame ContentHeaderFrame(short channel)
     {
-        int bytesRead = 0;
-        byte[] buffer2 = new byte[size];
+        using var reader = new BinReader(_frameBody);
+        var classId = reader.ReadInt16();
+        var _weight = reader.ReadInt16();
+        var bodyLength = reader.ReadInt64();
+        var propBytes = reader.ReadBytes(_frameBody.Length - 12);
+        var propsList = HeaderProperties.FromRaw(propBytes);
 
-        while (bytesRead < size)
-        {
-            var read = await _sourceStream.ReadAsync(buffer2, bytesRead, size - bytesRead, CancellationToken.None);
+        return new LowLevelAmqpHeaderFrame(channel, classId, bodyLength, propsList);
+    }
 
-            if (read == 0)
-            {
-                // TODO: handle close case
-            }
+    private LowLevelAmqpBodyFrame BodyFrame(short channel)
+    {
+        return new LowLevelAmqpBodyFrame(channel, _frameBody);
+    }
 
-            bytesRead += read;
-        }
+    private async Task<FrameHeader> ReadFrameHeader()
+    {
+        var header = await ReadAsync(FrameHeaderSize);
 
-        return buffer2;
+        byte type = header.Span[0];
+        var channel = BinaryPrimitives.ReadInt16BigEndian(header.Span[1..3]);
+        var size = BinaryPrimitives.ReadInt32BigEndian(header.Span[3..7]);
+        return new FrameHeader(type, channel, size);
+    }
+
+    public async Task<Memory<byte>> ReadAsync(int size)
+    {
+        Memory<byte> buffer =  new byte[size];
+        await _sourceStream.ReadExactlyAsync(buffer, CancellationToken.None);
+        return buffer;
     }
 
     public void Dispose()
@@ -106,4 +97,6 @@ public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
     {
         return _sourceStream.DisposeAsync();
     }
+
+    record FrameHeader(byte Type, short Channel, int Size);
 }
