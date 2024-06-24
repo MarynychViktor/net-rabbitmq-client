@@ -18,7 +18,6 @@ public class BinWriter : BinaryWriter
     public void WriteFieldTable(Dictionary<string, object> table)
     {
         BinWriter tableWriter = new();
-        IEnumerable<byte> buffer = new List<byte>();
 
         foreach (var (k, v) in table)
         {
@@ -45,11 +44,11 @@ public class BinWriter : BinaryWriter
 
     public void WriteLongStr(string s)
     {
-        byte[] bytes = Encoding.ASCII.GetBytes(s);
-        // return Encoding.ASCII.GetString(bytes);
+        var bytes = Encoding.ASCII.GetBytes(s);
         Write((uint)bytes.Length);
         Write(bytes);
     }
+
     public void  WriteFieldValue(object value) {
         switch (value)
         {

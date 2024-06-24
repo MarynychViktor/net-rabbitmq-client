@@ -126,7 +126,6 @@ public class InternalConnection
         {
             try
             {
-
                 // FIXME: cancellation
                 while (true)
                 {
