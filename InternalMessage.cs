@@ -48,6 +48,12 @@ public class HeaderProperties
     public String? AppId { get; set; }
     public String Reserved { get; set; } = "";
 
+    public override string ToString()
+    {
+        return
+            $"{nameof(ContentType)}: {ContentType}, {nameof(ContentEncoding)}: {ContentEncoding}, {nameof(Headers)}: {Headers}, {nameof(DeliveryMode)}: {DeliveryMode}, {nameof(Priority)}: {Priority}, {nameof(CorrelationId)}: {CorrelationId}, {nameof(ReplyTo)}: {ReplyTo}, {nameof(Expiration)}: {Expiration}, {nameof(MessageId)}: {MessageId}, {nameof(Timestamp)}: {Timestamp}, {nameof(Type)}: {Type}, {nameof(UserId)}: {UserId}, {nameof(AppId)}: {AppId}, {nameof(Reserved)}: {Reserved}";
+    }
+
     public static HeaderProperties FromRaw(byte[] bytes)
     {
         using var reader = new BinReader(bytes);

@@ -1,15 +1,18 @@
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading.Channels;
 using AMQPClient.Protocol.Methods;
 using AMQPClient.Protocol.Methods.Channels;
 using AMQPClient.Protocol.Methods.Connection;
+using AMQPClient.Protocol.Methods.Exchanges;
+using AMQPClient.Protocol.Methods.Queues;
 using AMQPClient.Protocol.Types;
 
 namespace AMQPClient.Protocol;
 
 // FIXME: handle errors
-public class InternalConnection
+public class InternalConnection : IChannelCommandExecutor
 {
     private readonly ConnectionParams _params;
     private const short DefaultChannelId = 0;
@@ -18,9 +21,10 @@ public class InternalConnection
     private const string Copyright = "Lorem ipsum";
     private const string Information = "Lorem ipsum";
     private int _channelId;
-    private Dictionary<int, IAmqpChannel> _channels = new();
-    private AmqpStreamWrapper _amqpStreamWrapper;
-    public Dictionary<string, Action<LowLevelAmqpMethodFrame>> BasicConsumers = new();
+    private readonly Dictionary<int, IAmqpChannel> _channels = new();
+    private readonly ConcurrentDictionary<short, ChannelWriter<object>> _channelWriters = new();
+    private AmqpFrameStream _amqpFrameStream;
+    private MethodCaller _methodCaller;
 
     public InternalConnection(ConnectionParams @params)
     {
@@ -28,7 +32,7 @@ public class InternalConnection
     }
 
     // FIXME: concurrent queue? or something better in general
-    private Dictionary<short, ConcurrentQueue<TaskCompletionSource<LowLevelAmqpMethodFrame>>> _methodWaitQueue = new()
+    private Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> _methodWaitQueue = new()
     {
         { DefaultChannelId, new() }
     };
@@ -36,28 +40,35 @@ public class InternalConnection
     public async Task StartAsync()
     {
         var tcpClient = new TcpClient(_params.Host, _params.Port);
-        _amqpStreamWrapper = new AmqpStreamWrapper(tcpClient.GetStream());
+        _amqpFrameStream = new AmqpFrameStream(tcpClient.GetStream());
+        _methodCaller = new MethodCaller(_amqpFrameStream, _methodWaitQueue);
         await HandshakeAsync();
         SpawnIncomingListener();
     }
 
     public async Task HandshakeAsync()
     {
-        async Task<LowLevelAmqpMethodFrame> ReadNextMethodFrame()
+        async Task<AmqpMethodFrame> ReadNextMethodFrame()
         {
-            var nextFrame = await _amqpStreamWrapper.ReadFrameAsync();
+            var nextFrame = await _amqpFrameStream.ReadFrameAsync();
 
             // Healthcheck frame check
             if (nextFrame.Type == FrameType.Method)
             {
-                return (LowLevelAmqpMethodFrame)nextFrame;
+                return (AmqpMethodFrame)nextFrame;
             }
 
-            return (LowLevelAmqpMethodFrame)await _amqpStreamWrapper.ReadFrameAsync();
+            return (AmqpMethodFrame)await _amqpFrameStream.ReadFrameAsync();
         }
 
-        var protocolHeader = Encoding.ASCII.GetBytes("AMQP").Concat(new byte[] { 0, 0, 9, 1 }).ToArray();
-        await _amqpStreamWrapper.SendRawAsync(protocolHeader);
+        async Task WriteMethodFrameAsync(Method method)
+        {
+            var bytes = Encoder.MarshalMethodFrame(method);
+            await _amqpFrameStream.SendFrameAsync(new AmqpFrame(DefaultChannelId, bytes, FrameType.Method));
+        }
+
+        var protocolHeader = "AMQP"u8.ToArray().Concat(new byte[] { 0, 0, 9, 1 }).ToArray();
+        await _amqpFrameStream.SendRawAsync(protocolHeader);
 
         var nextFrame = await ReadNextMethodFrame();
         // TODO: Do something
@@ -78,7 +89,7 @@ public class InternalConnection
             Response = $"{'\x00'}{_params.User}{'\x00'}{_params.Password}",
             Locale = "en_US",
         };
-        await SendMethodAsync(DefaultChannelId, startOkMethod);
+        await WriteMethodFrameAsync(startOkMethod);
 
         nextFrame = await ReadNextMethodFrame();
         var tuneMethod = (TuneMethod)nextFrame.Method;
@@ -89,15 +100,16 @@ public class InternalConnection
             Heartbeat = tuneMethod.Heartbeat,
             FrameMax = tuneMethod.FrameMax,
         };
-        await SendMethodAsync(DefaultChannelId, tuneOkMethod);
+        await WriteMethodFrameAsync(tuneOkMethod);
 
         var openMethod = new OpenMethod()
         {
             VirtualHost = _params.Vhost
         };
-        await SendMethodAsync(DefaultChannelId, openMethod);
+        await WriteMethodFrameAsync(openMethod);
 
         nextFrame = await ReadNextMethodFrame();
+        // TODO: handle response?
         var _openOkMethod = (OpenOkMethod)nextFrame.Method;
 
         Console.WriteLine("[InternalConnection]Handshake completed");
@@ -105,71 +117,58 @@ public class InternalConnection
 
     public async Task<InternalChannel> OpenChannelAsync()
     {
-        var method = new ChannelOpenMethod();
-        short channelId = NextChannelId();
-        await SendMethodAsync<ChannelOpenOkMethod>(channelId, method);
-        var channel = new InternalChannel(this, channelId);
-
+        var channelId = NextChannelId();
+        var ch = Channel.CreateUnbounded<object>();
+        var channel = new InternalChannel(ch, _methodCaller,this, channelId);
         _channels.Add(channelId, channel);
+        var reader = ch.Reader;
         
+        _channelWriters[channelId] = ch.Writer;
+        // Task.Run(async () =>
+        // {
+        //     while (true)
+        //     {
+        //         var res = await reader.ReadAsync();
+        //         Console.WriteLine($"Readed for channel {channelId} - {res}");
+        //     }
+        // });
+        await channel.OpenAsync(channelId);
+
         return channel;
     }
 
-    private Dictionary<short, Queue<(LowLevelAmqpMethodFrame method, LowLevelAmqpHeaderFrame? header, byte[]? bodyFrame)>> pendingFrames = new();
-    
     private void SpawnIncomingListener()
     {
-        var listener = new IncomingFrameListener(_amqpStreamWrapper, _channels, _methodWaitQueue);
+        var listener = new IncomingFrameListener(_amqpFrameStream, _channels, _methodWaitQueue, _channelWriters);
         Task.Run(async () => await listener.StartAsync());
     }
-
 
     internal async Task SendEnvelopeAsync(short channelId, AmqpEnvelope envelope)
     {
         var properties = new HeaderProperties();
         var body = envelope.Payload!.Content;
-        var methodFrame = new LowLevelAmqpMethodFrame(channelId, envelope.Method);
+        var methodFrame = new AmqpMethodFrame(channelId, envelope.Method);
 
-        await _amqpStreamWrapper.SendFrameAsync(methodFrame);
+        await _amqpFrameStream.SendFrameAsync(methodFrame);
 
         if (envelope.Payload == null)
         {
             return;
         }
 
-        var headerFrame = new LowLevelAmqpHeaderFrame(channelId, envelope.Method.ClassMethodId().Item1, body.Length, properties);
-        await _amqpStreamWrapper.SendFrameAsync(headerFrame);
+        var headerFrame = new AmqpHeaderFrame(channelId, envelope.Method.ClassMethodId().Item1, body.Length, properties);
+        await _amqpFrameStream.SendFrameAsync(headerFrame);
 
-        var bodyFrame = new LowLevelAmqpBodyFrame(channelId, body);
-        await _amqpStreamWrapper.SendFrameAsync(bodyFrame);
+        var bodyFrame = new AmqpBodyFrame(channelId, body);
+        await _amqpFrameStream.SendFrameAsync(bodyFrame);
     }
 
-    internal Task SendMethodAsync(short channel, Method method)
+    public void RegisterChannel(short channelId, IAmqpChannel channel)
     {
-        // FIXME: if method has body, write it should send multiple raw frames
-        var bytes = Encoder.MarshalMethodFrame(method);
-        return _amqpStreamWrapper.SendFrameAsync(new LowLevelAmqpFrame(channel, bytes, FrameType.Method));
-    }
-
-    internal async Task<TResponse> SendMethodAsync<TResponse>(short channelId, Method method) where TResponse: Method, new()
-    {
-        var taskSource = new TaskCompletionSource<LowLevelAmqpMethodFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
-        await SendMethodAsync(channelId, method);
-        ConcurrentQueue<TaskCompletionSource<LowLevelAmqpMethodFrame>> sourcesQueue;
-
-        if (!_methodWaitQueue.TryGetValue(channelId, out sourcesQueue))
-        {
-            sourcesQueue = new();
-            _methodWaitQueue.Add(channelId, sourcesQueue);
-        }
-
-        sourcesQueue.Enqueue(taskSource);
-        var frame = await taskSource.Task;
-
-        return (TResponse)frame.Method;
+        _channels.Add(channelId, channel);
     }
     
-    private short NextChannelId()
+    public short NextChannelId()
     {
         Interlocked.Increment(ref _channelId);
         return (short)_channelId;

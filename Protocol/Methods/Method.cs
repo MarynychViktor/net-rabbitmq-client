@@ -11,7 +11,13 @@ public class Method
         var attr = (MethodDefAttribute) GetType().GetCustomAttribute(typeof(MethodDefAttribute))!;
         return (attr.ClassId, attr.MethodId);
     }
-    
+
+    public short ClassId => ((MethodDefAttribute) GetType().GetCustomAttribute(typeof(MethodDefAttribute))!).ClassId;
+    public short MethodId => ((MethodDefAttribute) GetType().GetCustomAttribute(typeof(MethodDefAttribute))!).MethodId;
+
+    public bool IsAsyncResponse() => MethodMetaRegistry.IsAsyncResponse(ClassId, MethodId);
+    public bool HasBody() => MethodMetaRegistry.HasBody(ClassId, MethodId);
+
     public override string ToString()
     {
         var stringBuilder = new StringBuilder();

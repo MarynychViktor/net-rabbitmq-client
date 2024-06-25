@@ -2,14 +2,14 @@ using AMQPClient.Protocol.Methods;
 
 namespace AMQPClient.Protocol;
 
-public class LowLevelAmqpFrame
+public class AmqpFrame
 {
     public FrameType Type { get; protected set; }
     public short Channel { get; }
     // public byte[] Body { get; set; }
     public byte[] Payload { get; }
 
-    public LowLevelAmqpFrame(short channel, byte[] payload, FrameType type)
+    public AmqpFrame(short channel, byte[] payload, FrameType type)
     {
         Channel = channel;
         Payload = payload;
@@ -29,11 +29,14 @@ public class LowLevelAmqpFrame
     }
 }
 
-public class LowLevelAmqpMethodFrame : LowLevelAmqpFrame
+public class AmqpMethodFrame : AmqpFrame
 {
     public Method Method { get; set; }
-    
-    public LowLevelAmqpMethodFrame(short channel, Method payload) : base(channel, new byte[]{}, FrameType.Method)
+    public HeaderProperties? Properties { get; set; }
+    public long? BodyLength { get; set; }
+    public byte[]? Body { get; set; }
+
+    public AmqpMethodFrame(short channel, Method payload) : base(channel, new byte[]{}, FrameType.Method)
     {
         Method = payload;
     }

@@ -3,23 +3,22 @@ using AMQPClient.Protocol.Methods;
 
 namespace AMQPClient.Protocol;
 
-public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
+public class AmqpFrameStream : IDisposable, IAsyncDisposable
 {
     private const byte FrameHeaderSize = 7;
     private readonly Stream _sourceStream;
-    private byte[]? _frameBody;
+    private byte[] _frameBody;
+    private readonly SemaphoreSlim _sendLock = new(1, 1);
 
-    public AmqpStreamWrapper(Stream sourceStream)
+    public AmqpFrameStream(Stream sourceStream)
     {
         _sourceStream = sourceStream;
     }
 
-    public Task SendFrameAsync(LowLevelAmqpFrame frame)
+    public Task SendFrameAsync(AmqpFrame frame)
     {
         return SendRawAsync(frame.ToBytes());
     }
-
-    private readonly SemaphoreSlim _sendLock = new(1, 1);
     
     public async Task SendRawAsync(byte[] bytes)
     {
@@ -35,7 +34,7 @@ public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
         }
     }
     
-    public async Task<LowLevelAmqpFrame> ReadFrameAsync()
+    public async Task<AmqpFrame?> ReadFrameAsync()
     {
         var (type, channel, size) = await ReadFrameHeader();
         _frameBody = (await ReadAsync(size)).ToArray();
@@ -46,46 +45,63 @@ public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
 
         return frameType switch
         {
-            FrameType.Method => ReadMethodFrame(channel),
-            FrameType.ContentHeader => ContentHeaderFrame(channel),
-            FrameType.Body => BodyFrame(channel),
+            FrameType.Method => HandleMethodFrame(channel),
+            FrameType.ContentHeader => HandleContentHeaderFrame(channel),
+            FrameType.Body => HandleBodyFrame(channel),
             _ => throw new Exception("not implemented")
         };
     }
 
-    private LowLevelAmqpMethodFrame ReadMethodFrame(short channel)
+    private Dictionary<short, Queue<AmqpMethodFrame>> _partialFrames = new();
+
+    private AmqpMethodFrame? HandleMethodFrame(short channel)
     {
         var classId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[..2]);
         var methodId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[2..4]);
-        if (classId == 60 && methodId == 60)
-        {
-            var reader = new BinReader(_frameBody[4..]);
-            var sh = reader.ReadShortStr();
-            var dlt = reader.ReadInt64();
-            var foo = "bar";
-        }
         var methodInfo = typeof(Decoder).GetMethod("CreateMethodFrame")!;
         var genericMethod = methodInfo.MakeGenericMethod(MethodMetaRegistry.GetMethodType(classId, methodId));
-        var decodedMethod = (Method)genericMethod.Invoke(null, [_frameBody]);
+        var decodedMethod = (Method)genericMethod.Invoke(null, [_frameBody])!;
+        var methodFrame = new AmqpMethodFrame(channel, decodedMethod);
 
-        return new LowLevelAmqpMethodFrame(channel, decodedMethod);
+        if (decodedMethod.HasBody())
+        {
+            if (!_partialFrames.ContainsKey(channel)) _partialFrames[channel] = new Queue<AmqpMethodFrame>();
+
+            _partialFrames[channel].Enqueue(methodFrame);
+            return null;
+        }
+
+        return methodFrame;
     }
 
-    private LowLevelAmqpHeaderFrame ContentHeaderFrame(short channel)
+    private AmqpHeaderFrame? HandleContentHeaderFrame(short channel)
     {
         using var reader = new BinReader(_frameBody);
         var classId = reader.ReadInt16();
-        var _weight = reader.ReadInt16();
+        // Weight - reserved, ignore
+        reader.ReadInt16();
         var bodyLength = reader.ReadInt64();
-        var propBytes = reader.ReadBytes(_frameBody.Length - 12);
-        var propsList = HeaderProperties.FromRaw(propBytes);
+        var propsList = reader.ReadProperties();
+        var lastPending = _partialFrames[channel].Peek();
+        lastPending.BodyLength = bodyLength;
+        lastPending.Properties = propsList;
+        lastPending.Body = [];
 
-        return new LowLevelAmqpHeaderFrame(channel, classId, bodyLength, propsList);
+        return null;
     }
 
-    private LowLevelAmqpBodyFrame BodyFrame(short channel)
-    {
-        return new LowLevelAmqpBodyFrame(channel, _frameBody);
+    private AmqpMethodFrame? HandleBodyFrame(short channel)
+    {      
+        var lastPending = _partialFrames[channel].Peek();
+        if (lastPending.BodyLength == 0)
+        {
+            return _partialFrames[channel].Dequeue();
+        }
+
+        lastPending.Body = lastPending.Body.Concat(_frameBody).ToArray();
+        if (lastPending.BodyLength > lastPending.Body.LongLength) return null;
+
+        return _partialFrames[channel].Dequeue();;
     }
 
     private async Task<FrameHeader> ReadFrameHeader()

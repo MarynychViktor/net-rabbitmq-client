@@ -5,7 +5,8 @@ namespace AMQPClient.Protocol.Methods.Queues;
 [MethodDef(classId: 50, methodId: 20)]
 public class QueueBind : Method
 {
-    [ShortField(0)] public short Reserved1 { get; set; }
+    [ShortField(0)]
+    public short Reserved1 { get; set; }
 
     [ShortStringField(1)]
     public string Queue { get; set; }

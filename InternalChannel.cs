@@ -1,5 +1,4 @@
-using System.Collections.Concurrent;
-using System.Text;
+using System.Threading.Channels;
 using AMQPClient.Protocol;
 using AMQPClient.Protocol.Methods.Basic;
 using AMQPClient.Protocol.Methods.Channels;
@@ -11,21 +10,55 @@ namespace AMQPClient;
 
 public class InternalChannel : ChannelBase
 {
-    private BlockingCollection<object> queue = new ();
     public Dictionary<string, Action<AmqpEnvelope>> BasicConsumers = new();
+    private readonly Channel<object> _ch;
+    private readonly MethodCaller _methodCaller;
 
-    public InternalChannel(InternalConnection connection, short id) : base(connection, id)
-    { }
-
-    private readonly Dictionary<int, Type> _methodIdTypeMap = new ()
+    public InternalChannel(Channel<object> ch, MethodCaller methodCaller, InternalConnection connection, short id) : base(connection, id)
     {
-        {2011, typeof(ChannelOpenOkMethod)},
-        {2041, typeof(ChannelCloseOkMethod)},
-        {4011, typeof(ExchangeDeclareOk)},
-    };
+        _ch = ch;
+        _methodCaller = methodCaller;
+    }
+
+    public async Task OpenAsync(short channelId)
+    {        
+        await _methodCaller.CallMethodAsync<ChannelOpenOkMethod>(channelId, new ChannelOpenMethod());
+        StartListener();
+    }
+
+    public void StartListener(CancellationToken cancellationToken = default)
+    {
+        Task.Run(async () =>
+        {
+            while (true)
+            {
+                var res = await _ch.Reader.ReadAsync();
+                Console.WriteLine($"Readed for channel {ChannelId} - {res}");
+
+                switch (res)
+                {
+                    case AmqpMethodFrame frame:
+                        Console.WriteLine($"Res is  AmqpMethodFrame {frame.Method}");
+                        if (frame.Method.IsAsyncResponse())
+                        {
+                            if (!_methodCaller.SyncCallResponseWaitQueue[ChannelId]
+                                .TryDequeue(out TaskCompletionSource<AmqpMethodFrame> result))
+                            {
+                                Console.WriteLine($"No task completion source found");
+                                throw new Exception("No task completion source found");
+                            }
+   
+                            Console.WriteLine($"Set result #{frame.Method}");
+                            result.SetResult(frame);
+                        }
+                        break;
+                }
+            }
+        });
+    }
 
     // FIXME: add actual params to method
-    public async Task ExchangeDeclare(string name, bool passive = false, bool durable = false, bool autoDelete = false, bool internal_only = false, bool nowait = false)
+    public async Task ExchangeDeclare(string name, bool passive = false, bool durable = false, bool autoDelete = false, bool internalOnly = false, bool nowait = false)
     {
         var flags = ExchangeDeclareFlags.None;
         if (passive)
@@ -43,7 +76,7 @@ public class InternalChannel : ChannelBase
             flags &= ExchangeDeclareFlags.AutoDelete;
         }
 
-        if (internal_only)
+        if (internalOnly)
         {
             flags &= ExchangeDeclareFlags.Internal;
         }
@@ -60,7 +93,7 @@ public class InternalChannel : ChannelBase
             Flags = (byte) flags,
         };
 
-        await _connection.SendMethodAsync<ExchangeDeclareOk>(ChannelId, method);
+        await _methodCaller.CallMethodAsync<ExchangeDeclareOk>(ChannelId, method);
     }
 
     public async Task ExchangeDelete(string name)
@@ -69,7 +102,7 @@ public class InternalChannel : ChannelBase
         {
             Name = name,
         };
-        await _connection.SendMethodAsync<ExchangeDeleteOk>(ChannelId, method);
+        await _methodCaller.CallMethodAsync<ExchangeDeleteOk>(ChannelId, method);
     }
     
     // FIXME: add actual params to method
@@ -79,10 +112,11 @@ public class InternalChannel : ChannelBase
         {
             Name = name,
         };
-        var response = await _connection.SendMethodAsync<QueueDeclareOk>(ChannelId, method);
-        return response.Name;
+
+        var result = await _methodCaller.CallMethodAsync<QueueDeclareOk>(ChannelId, method);
+        return result.Name;
     }
-   
+
     // FIXME: add actual params to method
     public async Task QueueBind(string queue, string exchange, string routingKey)
     {
@@ -92,7 +126,7 @@ public class InternalChannel : ChannelBase
             Exchange = exchange,
             RoutingKey = routingKey,
         };
-        await _connection.SendMethodAsync<QueueBindOk>(ChannelId, method);
+        await _methodCaller.CallMethodAsync<QueueBindOk>(ChannelId, method);
     }
    
     // FIXME: add actual params to method
@@ -102,7 +136,7 @@ public class InternalChannel : ChannelBase
         {
             Queue = queue,
         };
-        var response = await _connection.SendMethodAsync<BasicConsumeOk>(ChannelId, method);
+        var response = await _methodCaller.CallMethodAsync<BasicConsumeOk>(ChannelId, method);
         Console.WriteLine($"Registered consumer with tag{response.Tag}");
         BasicConsumers.Add(response.Tag, consumer);
     }
@@ -131,29 +165,15 @@ public class InternalChannel : ChannelBase
                 Multiple = 0,
             };
 
-            await _connection.SendMethodAsync(ChannelId, method);
+            await _methodCaller.CallMethodAsync(ChannelId, method);
             
             return;
         }
         
         throw new NotImplementedException();
     }
- 
-    // public Task BasicPublish(string exchange, string routingKey, HeaderProperties properties, byte[] body)
-    // {
-    //     var method = new BasicPublish()
-    //     {
-    //         Exchange = exchange,
-    //         RoutingKey = routingKey,
-    //     };
-    //
-    //     var envelopePayload = new AmqpEnvelopePayload(properties, body);
-    //     var envelope = new AmqpEnvelope(method, envelopePayload);
-    //
-    //     return _connection.SendEnvelopeAsync(ChannelId, envelope);
-    // }
-    
-    public override Task HandleFrameAsync(LowLevelAmqpMethodFrame frame)
+
+    public override Task HandleFrameAsync(AmqpMethodFrame frame)
     {
         var (classId, methodId) = frame.Method.ClassMethodId();
         // FIXME:
@@ -174,11 +194,27 @@ public class InternalChannel : ChannelBase
     {
         if (envelope.Method is BasicDeliver method)
         {
-            Console.WriteLine("Basic deliver received");
+            Console.WriteLine("Basic deliver received123");
             BasicConsumers[method.ConsumerTag].Invoke(envelope);
             return Task.CompletedTask;
         }
         
         throw new NotImplementedException();
+    }
+
+    public async override Task HandleEvent<T>(InternalEvent<T> @event)
+    {
+        switch (@event)
+        {
+            case InternalEvent<AmqpMethodFrame>:
+                Console.WriteLine("Method frame received");
+                return;
+            case InternalEvent<AmqpHeaderFrame>:
+                Console.WriteLine("Header frame received");
+                return;
+            case InternalEvent<AmqpBodyFrame>:
+                Console.WriteLine("Body frame received");
+                return;
+        }
     }
 }
