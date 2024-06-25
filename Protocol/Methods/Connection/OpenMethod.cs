@@ -1,6 +1,6 @@
-using System.Text;
+using AMQPClient.Protocol.Attributes;
 
-namespace AMQPClient.Methods.Connection;
+namespace AMQPClient.Protocol.Methods.Connection;
 
 [MethodDef(classId: 10, methodId: 40)]
 public class OpenMethod : Method

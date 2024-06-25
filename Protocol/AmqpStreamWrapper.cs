@@ -1,8 +1,7 @@
 using System.Buffers.Binary;
-using AMQPClient.Methods;
-using AMQPClient.Protocol;
+using AMQPClient.Protocol.Methods;
 
-namespace AMQPClient;
+namespace AMQPClient.Protocol;
 
 public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
 {
@@ -58,6 +57,13 @@ public class AmqpStreamWrapper : IDisposable, IAsyncDisposable
     {
         var classId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[..2]);
         var methodId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[2..4]);
+        if (classId == 60 && methodId == 60)
+        {
+            var reader = new BinReader(_frameBody[4..]);
+            var sh = reader.ReadShortStr();
+            var dlt = reader.ReadInt64();
+            var foo = "bar";
+        }
         var methodInfo = typeof(Decoder).GetMethod("CreateMethodFrame")!;
         var genericMethod = methodInfo.MakeGenericMethod(MethodMetaRegistry.GetMethodType(classId, methodId));
         var decodedMethod = (Method)genericMethod.Invoke(null, [_frameBody]);

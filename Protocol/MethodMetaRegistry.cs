@@ -1,9 +1,10 @@
-using AMQPClient.Methods.Basic;
-using AMQPClient.Methods.Channels;
-using AMQPClient.Methods.Connection;
-using AMQPClient.Methods.Exchanges;
+using AMQPClient.Protocol.Methods.Basic;
+using AMQPClient.Protocol.Methods.Channels;
+using AMQPClient.Protocol.Methods.Connection;
+using AMQPClient.Protocol.Methods.Exchanges;
+using AMQPClient.Protocol.Methods.Queues;
 
-namespace AMQPClient;
+namespace AMQPClient.Protocol;
 
 public static class MethodMetaRegistry
 {

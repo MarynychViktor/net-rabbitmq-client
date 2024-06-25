@@ -1,4 +1,6 @@
-namespace AMQPClient.Methods.Channels;
+using AMQPClient.Protocol.Attributes;
+
+namespace AMQPClient.Protocol.Methods.Channels;
 
 public class CloseMethod : Method
 {

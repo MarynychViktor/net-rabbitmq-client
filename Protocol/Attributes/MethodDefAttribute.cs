@@ -1,4 +1,4 @@
-namespace AMQPClient;
+namespace AMQPClient.Protocol.Attributes;
 
 [AttributeUsage(AttributeTargets.Class)]
 public class MethodDefAttribute : Attribute

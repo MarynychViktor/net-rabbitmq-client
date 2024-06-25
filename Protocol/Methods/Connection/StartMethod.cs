@@ -1,4 +1,6 @@
-namespace AMQPClient.Methods.Connection;
+using AMQPClient.Protocol.Attributes;
+
+namespace AMQPClient.Protocol.Methods.Connection;
 
 [MethodDef(classId: 10, methodId: 10)]
 public class StartMethod : Method

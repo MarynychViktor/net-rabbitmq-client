@@ -1,8 +1,7 @@
 using System.Text;
-using AMQPClient.Methods;
-using AMQPClient.Protocol;
+using AMQPClient.Protocol.Methods;
 
-namespace AMQPClient.Types;
+namespace AMQPClient.Protocol.Types;
 
 public class AmqpEnvelope
 {

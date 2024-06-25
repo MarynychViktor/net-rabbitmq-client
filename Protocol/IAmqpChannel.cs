@@ -1,7 +1,6 @@
-using AMQPClient.Protocol;
-using AMQPClient.Types;
+using AMQPClient.Protocol.Types;
 
-namespace AMQPClient;
+namespace AMQPClient.Protocol;
 
 public interface IAmqpChannel
 {

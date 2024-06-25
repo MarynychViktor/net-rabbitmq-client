@@ -1,4 +1,6 @@
-namespace AMQPClient.Methods.Exchanges;
+using AMQPClient.Protocol.Attributes;
+
+namespace AMQPClient.Protocol.Methods.Exchanges;
 
 [MethodDef(classId: 40, methodId: 20)]
 public class ExchangeDelete : Method

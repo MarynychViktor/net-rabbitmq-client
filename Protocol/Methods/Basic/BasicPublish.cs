@@ -1,4 +1,6 @@
-namespace AMQPClient.Methods.Basic;
+using AMQPClient.Protocol.Attributes;
+
+namespace AMQPClient.Protocol.Methods.Basic;
 
 [MethodDef(classId: 60, methodId: 40)]
 public class BasicPublish : Method

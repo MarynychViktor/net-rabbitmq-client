@@ -1,4 +1,6 @@
-namespace AMQPClient.Methods.Exchanges;
+using AMQPClient.Protocol.Attributes;
+
+namespace AMQPClient.Protocol.Methods.Queues;
 
 [MethodDef(classId: 50, methodId: 20)]
 public class QueueBind : Method

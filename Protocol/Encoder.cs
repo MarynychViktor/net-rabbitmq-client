@@ -1,6 +1,7 @@
 using System.Reflection;
 using System.Text;
-using AMQPClient.Methods;
+using AMQPClient.Protocol.Attributes;
+using AMQPClient.Protocol.Methods;
 
 namespace AMQPClient.Protocol;
 
@@ -43,6 +44,10 @@ public class Encoder
                 case IntField attr:
                     // Console.WriteLine($"Write attribute {property.Name} {(int)property.GetValue(methodFrame)}");
                     writer.Write((int)property.GetValue(methodFrame));
+                    break;
+                case LongField attr:
+                    // Console.WriteLine($"Write attribute {property.Name} {(int)property.GetValue(methodFrame)}");
+                    writer.Write((long)property.GetValue(methodFrame));
                     break;
                 case PropertiesTableField attr:
                     // Console.WriteLine($"Write attribute {property.Name} {(Dictionary<string, object>)property.GetValue(methodFrame)}");

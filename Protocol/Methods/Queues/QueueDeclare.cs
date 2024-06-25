@@ -1,4 +1,6 @@
-namespace AMQPClient.Methods.Exchanges;
+using AMQPClient.Protocol.Attributes;
+
+namespace AMQPClient.Protocol.Methods.Queues;
 // reserved1: Short, name: ShortStr, ty: ShortStr, flags: Byte, props: PropTable
 [MethodDef(classId: 50, methodId: 10)]
 public class QueueDeclare : Method

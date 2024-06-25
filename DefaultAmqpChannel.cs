@@ -1,9 +1,9 @@
 using System.Collections.Concurrent;
 using System.Reflection;
 using System.Text;
-using AMQPClient.Methods.Connection;
 using AMQPClient.Protocol;
-using AMQPClient.Types;
+using AMQPClient.Protocol.Methods.Connection;
+using AMQPClient.Protocol.Types;
 using Decoder = AMQPClient.Protocol.Decoder;
 using Encoder = AMQPClient.Protocol.Encoder;
 

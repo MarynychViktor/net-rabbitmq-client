@@ -1,10 +1,11 @@
 using System.Collections.Concurrent;
 using System.Text;
-using AMQPClient.Methods.Basic;
-using AMQPClient.Methods.Channels;
-using AMQPClient.Methods.Exchanges;
 using AMQPClient.Protocol;
-using AMQPClient.Types;
+using AMQPClient.Protocol.Methods.Basic;
+using AMQPClient.Protocol.Methods.Channels;
+using AMQPClient.Protocol.Methods.Exchanges;
+using AMQPClient.Protocol.Methods.Queues;
+using AMQPClient.Protocol.Types;
 
 namespace AMQPClient;
 
@@ -118,6 +119,24 @@ public class InternalChannel : ChannelBase
         var envelope = new AmqpEnvelope(method, envelopePayload);
 
         return _connection.SendEnvelopeAsync(ChannelId, envelope);
+    }
+
+    public async Task BasicAck(AmqpEnvelope message)
+    {
+        if (message.Method is BasicDeliver deliverMethod)
+        {
+            var method = new BasicAck()
+            {
+                Tag = deliverMethod.DeliverTag,
+                Multiple = 0,
+            };
+
+            await _connection.SendMethodAsync(ChannelId, method);
+            
+            return;
+        }
+        
+        throw new NotImplementedException();
     }
  
     // public Task BasicPublish(string exchange, string routingKey, HeaderProperties properties, byte[] body)

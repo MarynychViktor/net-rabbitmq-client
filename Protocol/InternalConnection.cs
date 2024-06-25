@@ -1,15 +1,12 @@
 using System.Collections.Concurrent;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using AMQPClient.Methods;
-using AMQPClient.Methods.Channels;
-using AMQPClient.Methods.Connection;
-using AMQPClient.Protocol;
-using AMQPClient.Types;
-using Encoder = AMQPClient.Protocol.Encoder;
+using AMQPClient.Protocol.Methods;
+using AMQPClient.Protocol.Methods.Channels;
+using AMQPClient.Protocol.Methods.Connection;
+using AMQPClient.Protocol.Types;
 
-namespace AMQPClient;
+namespace AMQPClient.Protocol;
 
 // FIXME: handle errors
 public class InternalConnection
@@ -122,104 +119,8 @@ public class InternalConnection
     
     private void SpawnIncomingListener()
     {
-        Task.Run(async () =>
-        {
-            try
-            {
-                // FIXME: cancellation
-                while (true)
-                {
-                    var frame = await _amqpStreamWrapper.ReadFrameAsync();
-
-                    switch (frame.Type)
-                    {
-                        case FrameType.Method:
-                            var methodFrame = (LowLevelAmqpMethodFrame)frame;
-                            var (classId, methodId) = methodFrame.Method.ClassMethodId();
-                            Console.WriteLine($"Received method {classId} {methodId}");
-
-                            if (MethodMetaRegistry.HasBody(classId, methodId))
-                            {
-                                Queue<(LowLevelAmqpMethodFrame method, LowLevelAmqpHeaderFrame? header,
-                                    byte[]? bodyFrame)> pendingChannelFrames;
-                                if (!pendingFrames.TryGetValue(methodFrame.Channel, out pendingChannelFrames))
-                                {
-                                    pendingChannelFrames = new();
-                                    pendingFrames[methodFrame.Channel] = pendingChannelFrames;
-                                }
-
-                                pendingChannelFrames.Enqueue((methodFrame, null, null));
-                                continue;
-                            }
-
-                            ConcurrentQueue<TaskCompletionSource<LowLevelAmqpMethodFrame>> queue;
-                            TaskCompletionSource<LowLevelAmqpMethodFrame> taskSource;
-
-                            if (
-                                MethodMetaRegistry.IsAsyncResponse(classId, methodId) &&
-                                _methodWaitQueue.TryGetValue(methodFrame.Channel, out queue) &&
-                                queue.TryDequeue(out taskSource)
-                            )
-                            {
-                                taskSource.SetResult(methodFrame);
-                                break;
-                            }
-                            else
-                            {
-                                Console.WriteLine($"Frame received {methodFrame.Method}");
-                                _channels[methodFrame.Channel].HandleFrameAsync(methodFrame);
-                            }
-
-                            throw new NotImplementedException("Not impelemented part");
-                        case FrameType.ContentHeader:
-                            var headerFrame = (LowLevelAmqpHeaderFrame)frame;
-                            var lastMethodWoHeader = pendingFrames[headerFrame.Channel].Dequeue();
-                            lastMethodWoHeader.header = headerFrame;
-                            pendingFrames[headerFrame.Channel].Enqueue(lastMethodWoHeader);
-                            continue;
-                        case FrameType.Body:
-                            var bodyFrame = (LowLevelAmqpBodyFrame)frame;
-                            var lastMethodWoBody = pendingFrames[bodyFrame.Channel].Dequeue();
-
-                            if (lastMethodWoBody.bodyFrame == null)
-                            {
-                                lastMethodWoBody.bodyFrame = bodyFrame.Payload;
-                            }
-                            else
-                            {
-                                lastMethodWoBody.bodyFrame = lastMethodWoBody.bodyFrame.Concat(bodyFrame.Payload).ToArray();
-                            }
-
-                            var header = lastMethodWoBody.header;
-                            var bFrame = lastMethodWoBody.bodyFrame;
-                            if (lastMethodWoBody.header.BodyLength > lastMethodWoBody.bodyFrame.Length)
-                            {
-                                pendingFrames[bodyFrame.Channel].Enqueue(lastMethodWoBody);
-                                return;
-                            }
-
-                            var envelopePayload = new AmqpEnvelopePayload(
-                                lastMethodWoBody.header.Properties,
-                                lastMethodWoBody.bodyFrame
-                            );
-                            var envelope = new AmqpEnvelope(lastMethodWoBody.method.Method, envelopePayload);
-                            _channels[bodyFrame.Channel].HandleEnvelopeAsync(envelope);
-                            continue;
-                        default:
-                            throw new Exception($"Not matched type {frame.Type}");
-                    }
-                }
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine($"-------------------Listener failed with : {e}");
-                throw;
-            }
-            finally
-            {
-                Console.WriteLine($"-------------------Listener exited");
-            }
-        });
+        var listener = new IncomingFrameListener(_amqpStreamWrapper, _channels, _methodWaitQueue);
+        Task.Run(async () => await listener.StartAsync());
     }
 
 

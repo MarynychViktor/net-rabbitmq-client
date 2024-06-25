@@ -1,4 +1,4 @@
-namespace AMQPClient;
+namespace AMQPClient.Protocol.Attributes;
 
 public class PropertiesTableField : MethodField
 {

@@ -1,4 +1,6 @@
-namespace AMQPClient.Methods.Basic;
+using AMQPClient.Protocol.Attributes;
+
+namespace AMQPClient.Protocol.Methods.Basic;
 
 [MethodDef(classId: 60, methodId: 60)]
 public class BasicDeliver : Method
@@ -6,8 +8,8 @@ public class BasicDeliver : Method
     [ShortStringField(0)]
     public string ConsumerTag { get; set; }
 
-    [IntField(1)]
-    public int DeliverTag { get; set; }
+    [LongField(1)]
+    public long DeliverTag { get; set; }
 
     [ByteField(2)]
     public byte Redelivered { get; set; }

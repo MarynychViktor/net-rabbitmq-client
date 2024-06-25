@@ -1,4 +1,4 @@
-using AMQPClient.Methods;
+using AMQPClient.Protocol.Methods;
 
 namespace AMQPClient.Protocol;
 

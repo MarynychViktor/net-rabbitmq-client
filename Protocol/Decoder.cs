@@ -1,3 +1,5 @@
+using AMQPClient.Protocol.Attributes;
+
 namespace AMQPClient.Protocol;
 
 public class Decoder

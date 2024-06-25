@@ -1,8 +1,8 @@
 using System.Reflection;
 using System.Text;
-using AMQPClient.Methods.Connection;
+using AMQPClient.Protocol.Attributes;
 
-namespace AMQPClient.Methods;
+namespace AMQPClient.Protocol.Methods;
 
 public class Method
 {

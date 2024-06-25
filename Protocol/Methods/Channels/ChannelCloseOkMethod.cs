@@ -1,4 +1,4 @@
-namespace AMQPClient.Methods.Channels;
+namespace AMQPClient.Protocol.Methods.Channels;
 
 public class ChannelCloseOkMethod : Method
 {

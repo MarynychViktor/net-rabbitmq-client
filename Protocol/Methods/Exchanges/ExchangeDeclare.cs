@@ -1,4 +1,6 @@
-namespace AMQPClient.Methods.Exchanges;
+using AMQPClient.Protocol.Attributes;
+
+namespace AMQPClient.Protocol.Methods.Exchanges;
 // reserved1: Short, name: ShortStr, ty: ShortStr, flags: Byte, props: PropTable
 [MethodDef(classId: 40, methodId: 10)]
 public class ExchangeDeclare : Method

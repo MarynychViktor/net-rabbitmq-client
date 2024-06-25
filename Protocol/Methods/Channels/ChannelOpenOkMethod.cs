@@ -1,4 +1,6 @@
-namespace AMQPClient.Methods.Channels;
+using AMQPClient.Protocol.Attributes;
+
+namespace AMQPClient.Protocol.Methods.Channels;
 
 [MethodDef(classId: 20, methodId: 11)]
 public class ChannelOpenOkMethod : Method
