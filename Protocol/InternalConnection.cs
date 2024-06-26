@@ -4,6 +4,7 @@ using System.Threading.Channels;
 using AMQPClient.Protocol.Methods;
 using AMQPClient.Protocol.Methods.Connection;
 using AMQPClient.Protocol.Types;
+using Microsoft.Extensions.Logging;
 
 namespace AMQPClient.Protocol;
 
@@ -16,6 +17,10 @@ public class InternalConnection
     private readonly ConnectionParams _params;
     private AmqpFrameStream _amqpFrameStream;
     private int _channelId;
+    private short _heartbeatInterval = 60;
+    private long _lastFrameSent;
+    private long _lastFrameReceived;
+    private ILogger<InternalConnection> Logger { get; } = DefaultLoggerFactory.CreateLogger<InternalConnection>();
 
     public InternalConnection(ConnectionParams @params)
     {
@@ -24,11 +29,57 @@ public class InternalConnection
 
     public async Task StartAsync()
     {
-        var tcpClient = new TcpClient(_params.Host, _params.Port);
-        _amqpFrameStream = new AmqpFrameStream(tcpClient.GetStream());
+        _amqpFrameStream = CreateStreamReader();
         await HandshakeAsync();
         CreateChannel(DefaultChannelId);
         StartIncomingFramesListener();
+        StartHeartbeatFrameListener();
+    }
+
+    private void StartHeartbeatFrameListener(CancellationToken cancellationToken = default)
+    {
+        Task.Run(async () =>
+        {
+            while (true)
+            {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    break;
+                }
+
+                var frequency = _heartbeatInterval / 2;
+                var lastSent = DateTimeOffset.Now.ToUnixTimeSeconds() - _lastFrameSent;
+                var secondsToNextFrame = Math.Min(frequency - lastSent, frequency);
+
+                if (secondsToNextFrame <= 0)
+                {
+                    Logger.LogInformation("***Heartbeat frame sent***");
+                    var heartbeatFrame = new byte[] { 8, 0, 0, 0, 0, 0, 0, 0xCE };
+                    await _amqpFrameStream.SendRawAsync(heartbeatFrame);
+                    await Task.Delay(TimeSpan.FromSeconds(frequency), cancellationToken);
+                    continue;
+                }
+
+
+                await Task.Delay(TimeSpan.FromSeconds(secondsToNextFrame), cancellationToken);
+            }
+        }, cancellationToken);
+    }
+
+    private AmqpFrameStream CreateStreamReader()
+    {
+        var tcpClient = new TcpClient(_params.Host, _params.Port);
+        var reader = new AmqpFrameStream(tcpClient.GetStream());
+        reader.FrameSent += () =>
+        {
+            Interlocked.Exchange(ref _lastFrameSent, DateTimeOffset.Now.ToUnixTimeSeconds());
+        };
+        reader.FrameReceived += () =>
+        {
+            Interlocked.Exchange(ref _lastFrameReceived, DateTimeOffset.Now.ToUnixTimeSeconds());
+        };
+
+        return reader;
     }
 
     public async Task HandshakeAsync()
@@ -74,6 +125,7 @@ public class InternalConnection
 
         nextFrame = await ReadNextMethodFrame();
         var tuneMethod = (TuneMethod)nextFrame.Method;
+        _heartbeatInterval = tuneMethod.Heartbeat;
 
         var tuneOkMethod = new TuneOkMethod
         {

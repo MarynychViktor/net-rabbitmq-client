@@ -1,5 +1,6 @@
 using System.Buffers.Binary;
 using AMQPClient.Protocol.Methods;
+using Microsoft.Extensions.Logging;
 
 namespace AMQPClient.Protocol;
 
@@ -9,6 +10,9 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
     private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly Stream _sourceStream;
     private byte[] _frameBody;
+    public event Action FrameSent;
+    public event Action FrameReceived;
+    private ILogger<InternalConnection> _logger = DefaultLoggerFactory.CreateLogger<InternalConnection>();
 
     private readonly Dictionary<short, Queue<AmqpMethodFrame>> _partialFrames = new();
 
@@ -22,16 +26,6 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
         return SendRawAsync(frame.ToBytes());
     }
 
-    public ValueTask DisposeAsync()
-    {
-        return _sourceStream.DisposeAsync();
-    }
-
-    public void Dispose()
-    {
-        _sourceStream.Dispose();
-    }
-
     public async Task SendRawAsync(byte[] bytes)
     {
         await _sendLock.WaitAsync();
@@ -39,6 +33,7 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
         try
         {
             await _sourceStream.WriteAsync(bytes);
+            FrameSent?.Invoke();
         }
         finally
         {
@@ -52,16 +47,24 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
         _frameBody = (await ReadAsync(size, cancellationToken)).ToArray();
         // Read EOF frame
         await ReadAsync(1, cancellationToken);
+        FrameReceived?.Invoke();
 
         var frameType = (FrameType)type;
 
-        return frameType switch
+        switch (frameType)
         {
-            FrameType.Method => HandleMethodFrame(channel),
-            FrameType.ContentHeader => HandleContentHeaderFrame(channel),
-            FrameType.Body => HandleBodyFrame(channel),
-            _ => throw new Exception("not implemented")
-        };
+            case FrameType.Method:
+                return HandleMethodFrame(channel);
+            case FrameType.ContentHeader:
+                return HandleContentHeaderFrame(channel);
+            case FrameType.Body:
+                return HandleBodyFrame(channel);
+            case FrameType.Heartbeat:
+                _logger.LogInformation("***Heartbeat frame received...***");
+                return null;
+            default:
+                throw new Exception("Unreachable");
+        }
     }
 
     private AmqpMethodFrame? HandleMethodFrame(short channel)
@@ -109,7 +112,6 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
         if (lastPending.BodyLength > lastPending.Body.LongLength) return null;
 
         return _partialFrames[channel].Dequeue();
-        ;
     }
 
     private async Task<FrameHeader> ReadFrameHeader(CancellationToken cancellationToken)
@@ -130,4 +132,14 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
     }
 
     private record FrameHeader(byte Type, short Channel, int Size);
+
+    public ValueTask DisposeAsync()
+    {
+        return _sourceStream.DisposeAsync();
+    }
+
+    public void Dispose()
+    {
+        _sourceStream.Dispose();
+    }
 }
