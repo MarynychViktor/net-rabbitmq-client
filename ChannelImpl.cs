@@ -32,18 +32,17 @@ public class ChannelImpl(
         bool internalOnly = false, bool nowait = false)
     {
         var flags = ExchangeDeclareFlags.None;
-        if (passive) flags &= ExchangeDeclareFlags.Passive;
+        if (passive) flags |= ExchangeDeclareFlags.Passive;
 
-        if (durable) flags &= ExchangeDeclareFlags.Durable;
+        if (durable) flags |= ExchangeDeclareFlags.Durable;
 
-        if (autoDelete) flags &= ExchangeDeclareFlags.AutoDelete;
+        if (autoDelete) flags |= ExchangeDeclareFlags.AutoDelete;
 
-        if (internalOnly) flags &= ExchangeDeclareFlags.Internal;
+        if (internalOnly) flags |= ExchangeDeclareFlags.Internal;
 
         if (nowait)
         {
-            // FIXME: implement nowait
-            // flags &= ExchangeDeclareFlags.NoWait;
+            flags |= ExchangeDeclareFlags.NoWait;
         }
 
         var method = new ExchangeDeclare
@@ -52,7 +51,14 @@ public class ChannelImpl(
             Flags = (byte)flags
         };
 
-        await CallMethodAsync<ExchangeDeclareOk>(ChannelId, method);
+        if (nowait)
+        {
+            await CallMethodAsync(ChannelId, method);
+        }
+        else
+        {
+            await CallMethodAsync<ExchangeDeclareOk>(ChannelId, method);
+        }
     }
 
     public async Task Flow(bool active)

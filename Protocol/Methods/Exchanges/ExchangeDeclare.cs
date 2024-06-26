@@ -2,7 +2,6 @@ using AMQPClient.Protocol.Attributes;
 
 namespace AMQPClient.Protocol.Methods.Exchanges;
 
-// reserved1: Short, name: ShortStr, ty: ShortStr, flags: Byte, props: PropTable
 [MethodDef(40, 10)]
 public class ExchangeDeclare : Method
 {
@@ -13,18 +12,6 @@ public class ExchangeDeclare : Method
     [ShortStringField(2)] public string Type { get; set; } = "direct";
 
     [ByteField(3)] public byte Flags { get; set; } = 0;
-    //
-    // [ByteField(4)]
-    // public byte Durable { get; set; } = 0;
-    //      
-    // [ByteField(5)]
-    // public byte AutoDelete { get; set; } = 0;
-    //          
-    // [ByteField(6)]
-    // public byte Internal { get; set; } = 0;
-    //
-    // [ByteField(7)]
-    // public byte NoWait { get; set; } = 0;
 
     [PropertiesTableField(8)] public Dictionary<string, object> Arguments { get; set; } = new();
 }
@@ -34,8 +21,8 @@ public enum ExchangeDeclareFlags
 {
     None = 0,
     Passive = 1,
-    Durable = 2,
-    AutoDelete = 3,
-    Internal = 4,
-    NoWait = 5
+    Durable = 1 << 1,
+    AutoDelete = 1 << 2,
+    Internal = 1 << 3,
+    NoWait = 1 << 4
 }
