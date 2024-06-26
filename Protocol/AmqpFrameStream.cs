@@ -46,12 +46,12 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
         }
     }
 
-    public async Task<AmqpFrame?> ReadFrameAsync()
+    public async Task<AmqpFrame?> ReadFrameAsync(CancellationToken cancellationToken = default)
     {
-        var (type, channel, size) = await ReadFrameHeader();
-        _frameBody = (await ReadAsync(size)).ToArray();
+        var (type, channel, size) = await ReadFrameHeader(cancellationToken);
+        _frameBody = (await ReadAsync(size, cancellationToken)).ToArray();
         // Read EOF frame
-        await ReadAsync(1);
+        await ReadAsync(1, cancellationToken);
 
         var frameType = (FrameType)type;
 
@@ -112,9 +112,9 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
         ;
     }
 
-    private async Task<FrameHeader> ReadFrameHeader()
+    private async Task<FrameHeader> ReadFrameHeader(CancellationToken cancellationToken)
     {
-        var header = await ReadAsync(FrameHeaderSize);
+        var header = await ReadAsync(FrameHeaderSize, cancellationToken);
 
         var type = header.Span[0];
         var channel = BinaryPrimitives.ReadInt16BigEndian(header.Span[1..3]);
@@ -122,10 +122,10 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
         return new FrameHeader(type, channel, size);
     }
 
-    public async Task<Memory<byte>> ReadAsync(int size)
+    public async Task<Memory<byte>> ReadAsync(int size, CancellationToken cancellationToken)
     {
         Memory<byte> buffer = new byte[size];
-        await _sourceStream.ReadExactlyAsync(buffer, CancellationToken.None);
+        await _sourceStream.ReadExactlyAsync(buffer, cancellationToken);
         return buffer;
     }
 

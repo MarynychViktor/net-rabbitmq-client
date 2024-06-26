@@ -17,12 +17,6 @@ public class InternalConnection
     private AmqpFrameStream _amqpFrameStream;
     private int _channelId;
 
-    // FIXME: concurrent queue? or something better in general
-    private readonly Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> _methodWaitQueue = new()
-    {
-        { DefaultChannelId, new ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>() }
-    };
-
     public InternalConnection(ConnectionParams @params)
     {
         _params = @params;
@@ -33,7 +27,8 @@ public class InternalConnection
         var tcpClient = new TcpClient(_params.Host, _params.Port);
         _amqpFrameStream = new AmqpFrameStream(tcpClient.GetStream());
         await HandshakeAsync();
-        SpawnIncomingListener();
+        CreateChannel(DefaultChannelId);
+        StartIncomingFramesListener();
     }
 
     public async Task HandshakeAsync()
@@ -103,20 +98,26 @@ public class InternalConnection
 
     public async Task<IChannel> OpenChannelAsync()
     {
-        var channelId = NextChannelId();
+        var channel = CreateChannel();
+        await channel.OpenAsync(channel.ChannelId);
+        return channel;
+    }
+
+    private ChannelImpl CreateChannel(short? id = null)
+    {
+        var channelId = id ?? NextChannelId();
         var trxChannel = Channel.CreateUnbounded<object>();
-        var channel = new InternalChannel(trxChannel, _amqpFrameStream, this, channelId);
+        var channel = new ChannelImpl(trxChannel, _amqpFrameStream, this, channelId);
         _channels.Add(channelId, channel);
         _channelWriters[channelId] = trxChannel.Writer;
-        await channel.OpenAsync(channelId);
 
         return channel;
     }
 
-    private void SpawnIncomingListener()
+    private void StartIncomingFramesListener(CancellationToken cancellationToken = default)
     {
-        var listener = new IncomingFrameListener(_amqpFrameStream, _channels, _methodWaitQueue, _channelWriters);
-        Task.Run(async () => await listener.StartAsync());
+        var listener = new IncomingFrameListener(_amqpFrameStream, _channels, _channelWriters);
+        Task.Run(async () => await listener.StartAsync(cancellationToken), cancellationToken);
     }
 
     internal async Task SendEnvelopeAsync(short channelId, AmqpEnvelope envelope)

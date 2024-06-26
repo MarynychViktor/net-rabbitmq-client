@@ -11,25 +11,24 @@ using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;
 
-public class InternalChannel : ChannelBase, IChannel
+public class ChannelImpl : ChannelBase, IChannel
 {
     private readonly Dictionary<string, Action<AmqpEnvelope>> _consumersByTags = new();
     private readonly IAmqpFrameSender _frameSender;
     private readonly Channel<object> _trxChannel;
+    private ChannelReader<object> RxChannel => _trxChannel.Reader;
+    private ILogger<ChannelImpl> Logger { get; } = DefaultLoggerFactory.CreateLogger<ChannelImpl>();
 
-    private readonly Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> _synchMethodHandles =
+    private readonly Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> _syncMethodHandles =
         new();
 
     // Fixme: remove connection from channel
-    public InternalChannel(Channel<object> trxChannel, IAmqpFrameSender frameSender, InternalConnection connection,
+    public ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSender, InternalConnection connection,
         short id) : base(connection, id)
     {
         _trxChannel = trxChannel;
         _frameSender = frameSender;
     }
-
-    private ChannelReader<object> RxChannel => _trxChannel.Reader;
-    private ILogger<InternalChannel> Logger { get; } = DefaultLoggerFactory.CreateLogger<InternalChannel>();
 
     public async Task ExchangeDeclare(string name, bool passive = false, bool durable = false, bool autoDelete = false,
         bool internalOnly = false, bool nowait = false)
@@ -159,7 +158,7 @@ public class InternalChannel : ChannelBase, IChannel
                         Logger.LogDebug("AmqpMethod frame received with type {type}", frame.Method);
                         if (frame.Method.IsAsyncResponse())
                         {
-                            if (!_synchMethodHandles[ChannelId]
+                            if (!_syncMethodHandles[ChannelId]
                                     .TryDequeue(out var result))
                                 throw new Exception("No task completion source found");
 
@@ -195,10 +194,10 @@ public class InternalChannel : ChannelBase, IChannel
         var taskSource = new TaskCompletionSource<AmqpMethodFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
         await CallMethodAsync(channelId, method);
 
-        if (!_synchMethodHandles.TryGetValue(channelId, out var sourcesQueue))
+        if (!_syncMethodHandles.TryGetValue(channelId, out var sourcesQueue))
         {
             sourcesQueue = new ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>();
-            _synchMethodHandles[channelId] = sourcesQueue;
+            _syncMethodHandles[channelId] = sourcesQueue;
         }
 
         sourcesQueue.Enqueue(taskSource);

@@ -10,37 +10,31 @@ public class IncomingFrameListener
     private readonly AmqpFrameStream _amqpFrameStream;
     private readonly Dictionary<int, IAmqpChannel> _channels;
     private readonly IReadOnlyDictionary<short, ChannelWriter<object>> _channelWriters;
-    private AmqpFrame _frame;
-    private Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> _methodWaitQueue;
-
-    private Dictionary<short, Queue<(AmqpMethodFrame method, AmqpHeaderFrame? header, byte[]? bodyFrame)>>
-        _pendingFrames = new();
+    private AmqpFrame? _frame;
 
     public IncomingFrameListener(
         AmqpFrameStream amqpFrameStream,
         Dictionary<int, IAmqpChannel> channels,
-        Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> methodWaitQueue,
         IReadOnlyDictionary<short, ChannelWriter<object>> channelWriters
     )
     {
         _amqpFrameStream = amqpFrameStream;
         _channels = channels;
-        _methodWaitQueue = methodWaitQueue;
         _channelWriters = channelWriters;
     }
 
     private ILogger<IncomingFrameListener> Logger { get; } = DefaultLoggerFactory.CreateLogger<IncomingFrameListener>();
 
-    internal async Task StartAsync()
+    internal async Task StartAsync(CancellationToken cancellationToken = default)
     {
         try
         {
-            // FIXME: cancellation
             while (true)
             {
-                // var frame = await _amqpStreamWrapper.ReadFrameAsync();
+                if (cancellationToken.IsCancellationRequested) return;
+
                 Logger.LogDebug("Waiting for next frame");
-                _frame = await _amqpFrameStream.ReadFrameAsync();
+                _frame = await _amqpFrameStream.ReadFrameAsync(cancellationToken);
 
                 // Handle incomplete frames
                 if (_frame == null) continue;
