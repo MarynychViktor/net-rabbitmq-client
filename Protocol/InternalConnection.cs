@@ -104,7 +104,7 @@ public class InternalConnection
         Console.WriteLine("[InternalConnection]Handshake completed");
     }
 
-    public async Task<InternalChannel> OpenChannelAsync()
+    public async Task<IChannel> OpenChannelAsync()
     {
         var channelId = NextChannelId();
         var trxChannel = Channel.CreateUnbounded<object>();

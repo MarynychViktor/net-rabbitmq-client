@@ -19,7 +19,7 @@ public class Connection
         _internalConnection = internalConnection;
     }
 
-    public Task<InternalChannel> CreateChannelAsync()
+    public Task<IChannel> CreateChannelAsync()
     {
         return _internalConnection.OpenChannelAsync();
     }
