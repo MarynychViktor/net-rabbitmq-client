@@ -3,7 +3,7 @@ using AMQPClient.Protocol.Methods;
 
 namespace AMQPClient.Protocol;
 
-public class AmqpFrameStream : IDisposable, IAsyncDisposable
+public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
 {
     private const byte FrameHeaderSize = 7;
     private readonly Stream _sourceStream;

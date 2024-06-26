@@ -16,7 +16,6 @@ public class InternalConnection
     private readonly Dictionary<int, IAmqpChannel> _channels = new();
     private readonly ConcurrentDictionary<short, ChannelWriter<object>> _channelWriters = new();
     private AmqpFrameStream _amqpFrameStream;
-    private MethodCaller _methodCaller;
 
     public InternalConnection(ConnectionParams @params)
     {
@@ -33,7 +32,6 @@ public class InternalConnection
     {
         var tcpClient = new TcpClient(_params.Host, _params.Port);
         _amqpFrameStream = new AmqpFrameStream(tcpClient.GetStream());
-        _methodCaller = new MethodCaller(_amqpFrameStream, _methodWaitQueue);
         await HandshakeAsync();
         SpawnIncomingListener();
     }
@@ -110,7 +108,7 @@ public class InternalConnection
     {
         var channelId = NextChannelId();
         var trxChannel = Channel.CreateUnbounded<object>();
-        var channel = new InternalChannel(trxChannel, _methodCaller,this, channelId);
+        var channel = new InternalChannel(trxChannel, _amqpFrameStream,this, channelId);
         _channels.Add(channelId, channel);
         _channelWriters[channelId] = trxChannel.Writer;
         await channel.OpenAsync(channelId);
