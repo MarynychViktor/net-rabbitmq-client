@@ -33,17 +33,10 @@ public class ChannelImpl(
     {
         var flags = ExchangeDeclareFlags.None;
         if (passive) flags |= ExchangeDeclareFlags.Passive;
-
         if (durable) flags |= ExchangeDeclareFlags.Durable;
-
         if (autoDelete) flags |= ExchangeDeclareFlags.AutoDelete;
-
         if (internalOnly) flags |= ExchangeDeclareFlags.Internal;
-
-        if (nowait)
-        {
-            flags |= ExchangeDeclareFlags.NoWait;
-        }
+        if (nowait) flags |= ExchangeDeclareFlags.NoWait;
 
         var method = new ExchangeDeclare
         {
@@ -54,11 +47,10 @@ public class ChannelImpl(
         if (nowait)
         {
             await CallMethodAsync(ChannelId, method);
+            return;
         }
-        else
-        {
-            await CallMethodAsync<ExchangeDeclareOk>(ChannelId, method);
-        }
+
+        await CallMethodAsync<ExchangeDeclareOk>(ChannelId, method);
     }
 
     public async Task Flow(bool active)
