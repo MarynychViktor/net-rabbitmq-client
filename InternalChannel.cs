@@ -22,8 +22,8 @@ public class InternalChannel : ChannelBase
 
     public async Task OpenAsync(short channelId)
     {        
-        await _methodCaller.CallMethodAsync<ChannelOpenOkMethod>(channelId, new ChannelOpenMethod());
         StartListener();
+        await _methodCaller.CallMethodAsync<ChannelOpenOkMethod>(channelId, new ChannelOpenMethod());
     }
 
     public void StartListener(CancellationToken cancellationToken = default)
@@ -32,6 +32,7 @@ public class InternalChannel : ChannelBase
         {
             while (true)
             {
+                Console.WriteLine("Waiting for new frame....");
                 var res = await _ch.Reader.ReadAsync();
                 Console.WriteLine($"Readed for channel {ChannelId} - {res}");
 
@@ -68,6 +69,8 @@ public class InternalChannel : ChannelBase
                             }
                         }
                         break;
+                    default:
+                        throw new Exception("Unknown frame");
                 }
             }
         });

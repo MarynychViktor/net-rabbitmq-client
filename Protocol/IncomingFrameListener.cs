@@ -116,22 +116,25 @@ public class IncomingFrameListener
         ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>> responseWaitersQueue;
         TaskCompletionSource<AmqpMethodFrame> methodWaiter;
 
-        if (
-            method.IsAsyncResponse() &&
-            _methodWaitQueue.TryGetValue(methodFrame.Channel, out responseWaitersQueue) &&
-            responseWaitersQueue.TryDequeue(out methodWaiter)
-        )
-        {
-            methodWaiter.SetResult(methodFrame);
+        // if (
+            // method.IsAsyncResponse() &&
+            // _methodWaitQueue.TryGetValue(methodFrame.Channel, out responseWaitersQueue) &&
+            // responseWaitersQueue.TryDequeue(out methodWaiter)
+        // )
+        // {
+            // methodWaiter.SetResult(methodFrame);
+            Console.WriteLine("before method sent");
+            await PublishMethod(methodFrame);
+            Console.WriteLine("method sent");
             return;
-        }
-        else
-        {
-            Console.WriteLine($"Frame received {methodFrame.Method}");
-            _channels[methodFrame.Channel].HandleFrameAsync(methodFrame);
-        }
+        // }
+        // else
+        // {
+            // Console.WriteLine($"Frame received {methodFrame.Method}");
+            // _channels[methodFrame.Channel].HandleFrameAsync(methodFrame);
+        // }
 
-        throw new NotImplementedException("Not impelemented part");
+        // throw new NotImplementedException("Not impelemented part");
     }
 
     // private void HandleContentHeaderFrame()
