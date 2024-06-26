@@ -11,24 +11,22 @@ using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;
 
-public class ChannelImpl : ChannelBase, IChannel
+// Fixme: remove connection from channel
+public class ChannelImpl(
+    Channel<object> trxChannel,
+    IAmqpFrameSender frameSender,
+    InternalConnection connection,
+    short id)
+    : ChannelBase(connection, id), IChannel
 {
     private readonly Dictionary<string, Action<AmqpEnvelope>> _consumersByTags = new();
-    private readonly IAmqpFrameSender _frameSender;
-    private readonly Channel<object> _trxChannel;
-    private ChannelReader<object> RxChannel => _trxChannel.Reader;
+    private ChannelReader<object> RxChannel => trxChannel.Reader;
     private ILogger<ChannelImpl> Logger { get; } = DefaultLoggerFactory.CreateLogger<ChannelImpl>();
 
     private readonly Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> _syncMethodHandles =
         new();
-
-    // Fixme: remove connection from channel
-    public ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSender, InternalConnection connection,
-        short id) : base(connection, id)
-    {
-        _trxChannel = trxChannel;
-        _frameSender = frameSender;
-    }
+    private CancellationTokenSource _listenerCancellationSource;
+    private bool _isClosed = false;
 
     public async Task ExchangeDeclare(string name, bool passive = false, bool durable = false, bool autoDelete = false,
         bool internalOnly = false, bool nowait = false)
@@ -55,6 +53,23 @@ public class ChannelImpl : ChannelBase, IChannel
         };
 
         await CallMethodAsync<ExchangeDeclareOk>(ChannelId, method);
+    }
+
+    public async Task Flow(bool active)
+    {
+        var method = new ChannelFlowMethod()
+        {
+            Active = (byte)(active ? 1 : 0)
+        };
+        await CallMethodAsync<ChannelFlowOkMethod>(ChannelId, method);
+    }
+
+    public async Task Close()
+    {
+        var method = new ChannelCloseMethod();
+        _isClosed = true;
+        await CallMethodAsync<ChannelCloseOkMethod>(ChannelId, method, checkForClosed: false);
+        await _listenerCancellationSource.CancelAsync();
     }
 
     public async Task ExchangeDelete(string name)
@@ -137,7 +152,8 @@ public class ChannelImpl : ChannelBase, IChannel
 
     internal async Task OpenAsync(short channelId)
     {
-        StartListener();
+        _listenerCancellationSource = new CancellationTokenSource();
+        StartListener(_listenerCancellationSource.Token);
         await CallMethodAsync<ChannelOpenOkMethod>(channelId, new ChannelOpenMethod());
     }
 
@@ -147,7 +163,11 @@ public class ChannelImpl : ChannelBase, IChannel
         {
             while (true)
             {
-                if (cancellationToken.IsCancellationRequested) break;
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    Logger.LogInformation("Stopping listener loop...");
+                    break;
+                }
 
                 Logger.LogDebug("Waiting for next frame....");
                 var nextFrame = await RxChannel.ReadAsync(cancellationToken);
@@ -188,11 +208,11 @@ public class ChannelImpl : ChannelBase, IChannel
         }, cancellationToken);
     }
 
-    private async Task<TResponse> CallMethodAsync<TResponse>(short channelId, Method method)
+    private async Task<TResponse> CallMethodAsync<TResponse>(short channelId, Method method, bool checkForClosed = true)
         where TResponse : Method, new()
     {
         var taskSource = new TaskCompletionSource<AmqpMethodFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
-        await CallMethodAsync(channelId, method);
+        await CallMethodAsync(channelId, method, checkForClosed);
 
         if (!_syncMethodHandles.TryGetValue(channelId, out var sourcesQueue))
         {
@@ -205,9 +225,14 @@ public class ChannelImpl : ChannelBase, IChannel
         return (TResponse)(await taskSource.Task).Method;
     }
 
-    private Task CallMethodAsync(short channel, Method method)
+    private Task CallMethodAsync(short channel, Method method, bool checkForClosed = true)
     {
+        if (checkForClosed && _isClosed)
+        {
+            throw new Exception("Unable to call method on closed channel");
+        }
+
         var bytes = Encoder.MarshalMethodFrame(method);
-        return _frameSender.SendFrameAsync(new AmqpFrame(channel, bytes, FrameType.Method));
+        return frameSender.SendFrameAsync(new AmqpFrame(channel, bytes, FrameType.Method));
     }
 }
