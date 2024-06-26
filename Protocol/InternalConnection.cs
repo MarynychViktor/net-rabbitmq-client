@@ -1,25 +1,17 @@
 using System.Collections.Concurrent;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading.Channels;
 using AMQPClient.Protocol.Methods;
-using AMQPClient.Protocol.Methods.Channels;
 using AMQPClient.Protocol.Methods.Connection;
-using AMQPClient.Protocol.Methods.Exchanges;
-using AMQPClient.Protocol.Methods.Queues;
 using AMQPClient.Protocol.Types;
 
 namespace AMQPClient.Protocol;
 
 // FIXME: handle errors
-public class InternalConnection : IChannelCommandExecutor
+public class InternalConnection
 {
     private readonly ConnectionParams _params;
     private const short DefaultChannelId = 0;
-    private const string Product = "Amqp 0.9.1 client";
-    private const string Platform = ".Net Core";
-    private const string Copyright = "Lorem ipsum";
-    private const string Information = "Lorem ipsum";
     private int _channelId;
     private readonly Dictionary<int, IAmqpChannel> _channels = new();
     private readonly ConcurrentDictionary<short, ChannelWriter<object>> _channelWriters = new();
@@ -79,15 +71,14 @@ public class InternalConnection : IChannelCommandExecutor
         {
             ClientProperties = new Dictionary<string, object>()
             {
-                { "product", Product },
-                { "platform", Platform },
-                { "copyright", Copyright },
-                { "information", Information },
+                { "product", LibraryDefaults.Product },
+                { "platform", LibraryDefaults.Platform },
+                { "copyright", LibraryDefaults.Copyright },
+                { "information", LibraryDefaults.Information },
             },
-            Mechanism = "PLAIN",
-            // Response = "\x00" + "user" + "\x00" + "password",
+            Mechanism = LibraryDefaults.AuthMechanism,
             Response = $"{'\x00'}{_params.User}{'\x00'}{_params.Password}",
-            Locale = "en_US",
+            Locale = LibraryDefaults.Locale,
         };
         await WriteMethodFrameAsync(startOkMethod);
 
@@ -118,20 +109,10 @@ public class InternalConnection : IChannelCommandExecutor
     public async Task<InternalChannel> OpenChannelAsync()
     {
         var channelId = NextChannelId();
-        var ch = Channel.CreateUnbounded<object>();
-        var channel = new InternalChannel(ch, _methodCaller,this, channelId);
+        var trxChannel = Channel.CreateUnbounded<object>();
+        var channel = new InternalChannel(trxChannel, _methodCaller,this, channelId);
         _channels.Add(channelId, channel);
-        var reader = ch.Reader;
-        
-        _channelWriters[channelId] = ch.Writer;
-        // Task.Run(async () =>
-        // {
-        //     while (true)
-        //     {
-        //         var res = await reader.ReadAsync();
-        //         Console.WriteLine($"Readed for channel {channelId} - {res}");
-        //     }
-        // });
+        _channelWriters[channelId] = trxChannel.Writer;
         await channel.OpenAsync(channelId);
 
         return channel;
@@ -162,13 +143,8 @@ public class InternalConnection : IChannelCommandExecutor
         var bodyFrame = new AmqpBodyFrame(channelId, body);
         await _amqpFrameStream.SendFrameAsync(bodyFrame);
     }
-
-    public void RegisterChannel(short channelId, IAmqpChannel channel)
-    {
-        _channels.Add(channelId, channel);
-    }
     
-    public short NextChannelId()
+    private short NextChannelId()
     {
         Interlocked.Increment(ref _channelId);
         return (short)_channelId;

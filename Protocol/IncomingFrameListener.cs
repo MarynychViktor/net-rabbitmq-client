@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
 using AMQPClient.Protocol.Types;
+using Microsoft.Extensions.Logging;
 
 namespace AMQPClient.Protocol;
 
@@ -13,6 +14,7 @@ public class IncomingFrameListener
     private Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> _methodWaitQueue;
     private readonly IReadOnlyDictionary<short, ChannelWriter<object>> _channelWriters;
     private AmqpFrame _frame;
+    private ILogger<IncomingFrameListener> Logger { get; } = DefaultLoggerFactory.CreateLogger<IncomingFrameListener>();
 
     public IncomingFrameListener(
         AmqpFrameStream amqpFrameStream,
@@ -26,7 +28,6 @@ public class IncomingFrameListener
         _channelWriters = channelWriters;
     }
 
-
     internal async Task StartAsync()
     {
         try
@@ -35,8 +36,9 @@ public class IncomingFrameListener
             while (true)
             {
                 // var frame = await _amqpStreamWrapper.ReadFrameAsync();
-                await ReadNextAsync();
-                
+                Logger.LogDebug("Waiting for next frame");
+                _frame = await _amqpFrameStream.ReadFrameAsync();
+
                 // Handle incomplete frames
                 if (_frame == null) continue;
 
@@ -45,14 +47,8 @@ public class IncomingFrameListener
                     case FrameType.Method:
                         await HandleMethodFrame();
                         continue;
-                    case FrameType.ContentHeader:
-                        throw new Exception($"Not expected type {_frame.Type}");
-                        continue;
-                    case FrameType.Body:
-                        throw new Exception($"Not expected type {_frame.Type}");
-                        continue;
                     case FrameType.Heartbeat:
-                        Console.WriteLine("FrameType.Heartbeat received ----");
+                        Logger.LogWarning("Heartbeat frame ignored");
                         continue;
                     default:
                         throw new Exception($"Not matched type {_frame.Type}");
@@ -70,11 +66,6 @@ public class IncomingFrameListener
         }
     }
 
-    private async Task ReadNextAsync()
-    {
-        _frame = await _amqpFrameStream.ReadFrameAsync();
-    }
-
     private async Task PublishMethod(AmqpMethodFrame methodFrame)
     {
         await _channelWriters[methodFrame.Channel].WriteAsync(methodFrame);
@@ -85,92 +76,14 @@ public class IncomingFrameListener
         var methodFrame = (AmqpMethodFrame)_frame;
         var method = methodFrame.Method;
         var (classId, methodId) = methodFrame.Method.ClassMethodId();
-        Console.WriteLine($"Received method {classId} {methodId}");
+        Logger.LogInformation("Received method frame '{typeName}'", method.GetType().Name);
 
         if (method.HasBody())
         {
-            
-            var envelopePayload = new AmqpEnvelopePayload(
-                methodFrame.Properties,
-                methodFrame.Body
-            );
-
-            var envelope = new AmqpEnvelope(method, envelopePayload);
             await PublishMethod(methodFrame);
-            // _channels[methodFrame.Channel].HandleEnvelopeAsync(envelope);
             return;
         }
-        // if (method.HasBody())
-        // {
-        //     Queue<(AmqpMethodFrame method, AmqpHeaderFrame? header, byte[]? bodyFrame)> pendingChannelFrames;
-        //     if (!_pendingFrames.TryGetValue(methodFrame.Channel, out pendingChannelFrames))
-        //     {
-        //         pendingChannelFrames = new();
-        //         _pendingFrames[methodFrame.Channel] = pendingChannelFrames;
-        //     }
-        //
-        //     pendingChannelFrames.Enqueue((methodFrame, null, null));
-        //     return;
-        // }
-        //
-        ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>> responseWaitersQueue;
-        TaskCompletionSource<AmqpMethodFrame> methodWaiter;
 
-        // if (
-            // method.IsAsyncResponse() &&
-            // _methodWaitQueue.TryGetValue(methodFrame.Channel, out responseWaitersQueue) &&
-            // responseWaitersQueue.TryDequeue(out methodWaiter)
-        // )
-        // {
-            // methodWaiter.SetResult(methodFrame);
-            Console.WriteLine("before method sent");
-            await PublishMethod(methodFrame);
-            Console.WriteLine("method sent");
-            return;
-        // }
-        // else
-        // {
-            // Console.WriteLine($"Frame received {methodFrame.Method}");
-            // _channels[methodFrame.Channel].HandleFrameAsync(methodFrame);
-        // }
-
-        // throw new NotImplementedException("Not impelemented part");
+        await PublishMethod(methodFrame);
     }
-
-    // private void HandleContentHeaderFrame()
-    // {
-    //     var headerFrame = (AmqpHeaderFrame)_frame;
-    //     var lastMethodWoHeader = _pendingFrames[headerFrame.Channel].Dequeue();
-    //     lastMethodWoHeader.header = headerFrame;
-    //     _pendingFrames[headerFrame.Channel].Enqueue(lastMethodWoHeader);
-    // }
-
-    // private void HandleBodyFrame()
-    // {
-    //     var bodyFrame = (AmqpBodyFrame)_frame;
-    //     var pendingFrame = _pendingFrames[bodyFrame.Channel].Dequeue();
-    //
-    //     if (pendingFrame.bodyFrame == null)
-    //     {
-    //         pendingFrame.bodyFrame = bodyFrame.Payload;
-    //     }
-    //     else
-    //     {
-    //         pendingFrame.bodyFrame = pendingFrame.bodyFrame.Concat(bodyFrame.Payload).ToArray();
-    //     }
-    //
-    //     if (pendingFrame.header.BodyLength != 0 && pendingFrame.header.BodyLength > pendingFrame.bodyFrame.Length)
-    //     {
-    //         _pendingFrames[bodyFrame.Channel].Enqueue(pendingFrame);
-    //         return;
-    //     }
-    //
-    //     var envelopePayload = new AmqpEnvelopePayload(
-    //         pendingFrame.header.Properties,
-    //         pendingFrame.bodyFrame
-    //     );
-    //
-    //     var envelope = new AmqpEnvelope(pendingFrame.method.Method, envelopePayload);
-    //     _channels[bodyFrame.Channel].HandleEnvelopeAsync(envelope);
-    // }
 }

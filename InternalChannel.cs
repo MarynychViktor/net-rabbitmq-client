@@ -5,18 +5,21 @@ using AMQPClient.Protocol.Methods.Channels;
 using AMQPClient.Protocol.Methods.Exchanges;
 using AMQPClient.Protocol.Methods.Queues;
 using AMQPClient.Protocol.Types;
+using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;
 
 public class InternalChannel : ChannelBase
 {
     public Dictionary<string, Action<AmqpEnvelope>> BasicConsumers = new();
-    private readonly Channel<object> _ch;
+    private readonly Channel<object> _trxChannel;
+    private ChannelReader<object> RxChannel => _trxChannel.Reader;
     private readonly MethodCaller _methodCaller;
+    private ILogger<InternalChannel> Logger { get; } = DefaultLoggerFactory.CreateLogger<InternalChannel>();
 
-    public InternalChannel(Channel<object> ch, MethodCaller methodCaller, InternalConnection connection, short id) : base(connection, id)
+    public InternalChannel(Channel<object> trxChannel, MethodCaller methodCaller, InternalConnection connection, short id) : base(connection, id)
     {
-        _ch = ch;
+        _trxChannel = trxChannel;
         _methodCaller = methodCaller;
     }
 
@@ -32,30 +35,29 @@ public class InternalChannel : ChannelBase
         {
             while (true)
             {
-                Console.WriteLine("Waiting for new frame....");
-                var res = await _ch.Reader.ReadAsync();
-                Console.WriteLine($"Readed for channel {ChannelId} - {res}");
+                if (cancellationToken.IsCancellationRequested) break;
 
-                switch (res)
+                Logger.LogDebug("Waiting for next frame....");
+                var nextFrame = await RxChannel.ReadAsync(cancellationToken);
+
+                switch (nextFrame)
                 {
                     case AmqpMethodFrame frame:
-                        Console.WriteLine($"Res is  AmqpMethodFrame {frame.Method}");
+                        Logger.LogDebug("AmqpMethod frame received with type {type}", frame.Method);
                         if (frame.Method.IsAsyncResponse())
                         {
                             if (!_methodCaller.SyncCallResponseWaitQueue[ChannelId]
                                 .TryDequeue(out TaskCompletionSource<AmqpMethodFrame> result))
                             {
-                                Console.WriteLine($"No task completion source found");
                                 throw new Exception("No task completion source found");
                             }
    
-                            Console.WriteLine($"Set result #{frame.Method}");
                             result.SetResult(frame);
                         }
 
                         if (frame.Method.HasBody())
                         {
-                            Console.WriteLine("has body");
+                            // TODO: remove envolope class
                             var envelopePayload = new AmqpEnvelopePayload(
                                 frame.Properties,
                                 frame.Body
@@ -65,7 +67,6 @@ public class InternalChannel : ChannelBase
                             if (envelope.Method is BasicDeliver method)
                             {
                                 BasicConsumers[method.ConsumerTag].Invoke(envelope);
-                                return Task.CompletedTask;
                             }
                         }
                         break;
@@ -73,10 +74,11 @@ public class InternalChannel : ChannelBase
                         throw new Exception("Unknown frame");
                 }
             }
-        });
+
+            return Task.CompletedTask;
+        }, cancellationToken);
     }
 
-    // FIXME: add actual params to method
     public async Task ExchangeDeclare(string name, bool passive = false, bool durable = false, bool autoDelete = false, bool internalOnly = false, bool nowait = false)
     {
         var flags = ExchangeDeclareFlags.None;
@@ -121,6 +123,7 @@ public class InternalChannel : ChannelBase
         {
             Name = name,
         };
+
         await _methodCaller.CallMethodAsync<ExchangeDeleteOk>(ChannelId, method);
     }
     
