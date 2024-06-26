@@ -1,6 +1,5 @@
 using System.Collections.Concurrent;
 using System.Threading.Channels;
-using AMQPClient.Protocol.Types;
 using Microsoft.Extensions.Logging;
 
 namespace AMQPClient.Protocol;
@@ -10,23 +9,27 @@ public class IncomingFrameListener
 {
     private readonly AmqpFrameStream _amqpFrameStream;
     private readonly Dictionary<int, IAmqpChannel> _channels;
-    private Dictionary<short, Queue<(AmqpMethodFrame method, AmqpHeaderFrame? header, byte[]? bodyFrame)>> _pendingFrames = new();
-    private Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> _methodWaitQueue;
     private readonly IReadOnlyDictionary<short, ChannelWriter<object>> _channelWriters;
     private AmqpFrame _frame;
-    private ILogger<IncomingFrameListener> Logger { get; } = DefaultLoggerFactory.CreateLogger<IncomingFrameListener>();
+    private Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> _methodWaitQueue;
+
+    private Dictionary<short, Queue<(AmqpMethodFrame method, AmqpHeaderFrame? header, byte[]? bodyFrame)>>
+        _pendingFrames = new();
 
     public IncomingFrameListener(
         AmqpFrameStream amqpFrameStream,
         Dictionary<int, IAmqpChannel> channels,
         Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> methodWaitQueue,
         IReadOnlyDictionary<short, ChannelWriter<object>> channelWriters
-    ) {
+    )
+    {
         _amqpFrameStream = amqpFrameStream;
         _channels = channels;
         _methodWaitQueue = methodWaitQueue;
         _channelWriters = channelWriters;
     }
+
+    private ILogger<IncomingFrameListener> Logger { get; } = DefaultLoggerFactory.CreateLogger<IncomingFrameListener>();
 
     internal async Task StartAsync()
     {
@@ -62,7 +65,7 @@ public class IncomingFrameListener
         }
         finally
         {
-            Console.WriteLine($"-------------------Listener exited");
+            Console.WriteLine("-------------------Listener exited");
         }
     }
 

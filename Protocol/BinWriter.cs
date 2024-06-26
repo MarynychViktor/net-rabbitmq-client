@@ -1,13 +1,12 @@
-using System.Buffers.Binary;
 using System.Text;
 
 namespace AMQPClient.Protocol;
 
 public class BinWriter : BinaryWriter
 {
-    private Stream _stream;
+    private readonly Stream _stream;
 
-    public BinWriter(): this(new MemoryStream())
+    public BinWriter() : this(new MemoryStream())
     {
     }
 
@@ -20,12 +19,9 @@ public class BinWriter : BinaryWriter
     {
         BinWriter tableWriter = new();
 
-        foreach (var (k, v) in table)
-        {
-            tableWriter.WriteFieldValuePair(k, v);
-        }
+        foreach (var (k, v) in table) tableWriter.WriteFieldValuePair(k, v);
 
-        byte[] fieldTable = ((MemoryStream)tableWriter.OutStream).ToArray();
+        var fieldTable = ((MemoryStream)tableWriter.OutStream).ToArray();
         Write((uint)fieldTable.Length);
         Write(fieldTable);
     }
@@ -38,7 +34,7 @@ public class BinWriter : BinaryWriter
 
     public void WriteShortStr(string s)
     {
-        byte[] bytes = Encoding.ASCII.GetBytes(s);
+        var bytes = Encoding.ASCII.GetBytes(s);
         Write((byte)bytes.Length);
         Write(bytes);
     }
@@ -50,7 +46,8 @@ public class BinWriter : BinaryWriter
         Write(bytes);
     }
 
-    public void  WriteFieldValue(object value) {
+    public void WriteFieldValue(object value)
+    {
         switch (value)
         {
             case bool item:
@@ -160,10 +157,7 @@ public class BinWriter : BinaryWriter
 
     public byte[] ToArray()
     {
-        if (_stream is MemoryStream memoryStream)
-        {
-            return memoryStream.ToArray();
-        }
+        if (_stream is MemoryStream memoryStream) return memoryStream.ToArray();
 
         throw new Exception("Not supported method");
     }

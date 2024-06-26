@@ -2,9 +2,8 @@ using AMQPClient.Protocol.Attributes;
 
 namespace AMQPClient.Protocol.Methods.Channels;
 
-[MethodDef(classId: 20, methodId: 11)]
+[MethodDef(20, 11)]
 public class ChannelOpenOkMethod : Method
 {
-    [ShortStringField(0)]
-    private string Reserved1 { get; set; } = "";
+    [ShortStringField(0)] private string Reserved1 { get; set; } = "";
 }

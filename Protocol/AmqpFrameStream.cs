@@ -6,9 +6,11 @@ namespace AMQPClient.Protocol;
 public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
 {
     private const byte FrameHeaderSize = 7;
+    private readonly SemaphoreSlim _sendLock = new(1, 1);
     private readonly Stream _sourceStream;
     private byte[] _frameBody;
-    private readonly SemaphoreSlim _sendLock = new(1, 1);
+
+    private readonly Dictionary<short, Queue<AmqpMethodFrame>> _partialFrames = new();
 
     public AmqpFrameStream(Stream sourceStream)
     {
@@ -19,7 +21,17 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
     {
         return SendRawAsync(frame.ToBytes());
     }
-    
+
+    public ValueTask DisposeAsync()
+    {
+        return _sourceStream.DisposeAsync();
+    }
+
+    public void Dispose()
+    {
+        _sourceStream.Dispose();
+    }
+
     public async Task SendRawAsync(byte[] bytes)
     {
         await _sendLock.WaitAsync();
@@ -33,7 +45,7 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
             _sendLock.Release();
         }
     }
-    
+
     public async Task<AmqpFrame?> ReadFrameAsync()
     {
         var (type, channel, size) = await ReadFrameHeader();
@@ -51,8 +63,6 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
             _ => throw new Exception("not implemented")
         };
     }
-
-    private Dictionary<short, Queue<AmqpMethodFrame>> _partialFrames = new();
 
     private AmqpMethodFrame? HandleMethodFrame(short channel)
     {
@@ -91,24 +101,22 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
     }
 
     private AmqpMethodFrame? HandleBodyFrame(short channel)
-    {      
+    {
         var lastPending = _partialFrames[channel].Peek();
-        if (lastPending.BodyLength == 0)
-        {
-            return _partialFrames[channel].Dequeue();
-        }
+        if (lastPending.BodyLength == 0) return _partialFrames[channel].Dequeue();
 
         lastPending.Body = lastPending.Body.Concat(_frameBody).ToArray();
         if (lastPending.BodyLength > lastPending.Body.LongLength) return null;
 
-        return _partialFrames[channel].Dequeue();;
+        return _partialFrames[channel].Dequeue();
+        ;
     }
 
     private async Task<FrameHeader> ReadFrameHeader()
     {
         var header = await ReadAsync(FrameHeaderSize);
 
-        byte type = header.Span[0];
+        var type = header.Span[0];
         var channel = BinaryPrimitives.ReadInt16BigEndian(header.Span[1..3]);
         var size = BinaryPrimitives.ReadInt32BigEndian(header.Span[3..7]);
         return new FrameHeader(type, channel, size);
@@ -116,20 +124,10 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
 
     public async Task<Memory<byte>> ReadAsync(int size)
     {
-        Memory<byte> buffer =  new byte[size];
+        Memory<byte> buffer = new byte[size];
         await _sourceStream.ReadExactlyAsync(buffer, CancellationToken.None);
         return buffer;
     }
 
-    public void Dispose()
-    {
-        _sourceStream.Dispose();
-    }
-
-    public ValueTask DisposeAsync()
-    {
-        return _sourceStream.DisposeAsync();
-    }
-
-    record FrameHeader(byte Type, short Channel, int Size);
+    private record FrameHeader(byte Type, short Channel, int Size);
 }

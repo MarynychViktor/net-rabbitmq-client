@@ -6,9 +6,9 @@ public class AMQPFrame
     public short Channel { get; set; }
     public byte[] Body { get; set; }
 
-    public static AMQPFrame MethodFrame( short channel, byte[] body)
+    public static AMQPFrame MethodFrame(short channel, byte[] body)
     {
-        return new AMQPFrame()
+        return new AMQPFrame
         {
             Type = AMQPFrameType.Method,
             Channel = channel,
@@ -33,5 +33,5 @@ public enum AMQPFrameType
 {
     Method = 1,
     ContentHeader = 2,
-    Body = 3,
+    Body = 3
 }

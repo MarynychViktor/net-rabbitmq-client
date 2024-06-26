@@ -5,15 +5,15 @@ namespace AMQPClient.Protocol.Types;
 
 public class AmqpEnvelope
 {
-    public Method Method { get; }
-    public AmqpEnvelopePayload? Payload { get; }
-
     public AmqpEnvelope(Method method, AmqpEnvelopePayload? payload = null)
     {
         Method = method;
         Payload = payload;
     }
-    
+
+    public Method Method { get; }
+    public AmqpEnvelopePayload? Payload { get; }
+
     public override string ToString()
     {
         return $"Method: {Method} \n" +
@@ -23,14 +23,14 @@ public class AmqpEnvelope
 
 public class AmqpEnvelopePayload
 {
-    public HeaderProperties Properties { get; }
-    public byte[] Content { get; }
-
     public AmqpEnvelopePayload(HeaderProperties properties, byte[] content)
     {
         Properties = properties;
         Content = content;
     }
+
+    public HeaderProperties Properties { get; }
+    public byte[] Content { get; }
 
     public override string ToString()
     {
@@ -244,5 +244,5 @@ public class AmqpEnvelopePayload
 public enum MessageDeliveryMode
 {
     NonPersistent = 1,
-    Persistent = 2,
+    Persistent = 2
 }

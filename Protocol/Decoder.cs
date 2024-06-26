@@ -22,9 +22,8 @@ public class Decoder
             })
             .Where(data => data.FieldAttribute != null)
             .OrderBy(data => data.FieldAttribute.index);
-   
+
         foreach (var (property, attribute) in propertiesWithAttrs)
-        {
             switch (attribute)
             {
                 case ByteField:
@@ -51,8 +50,6 @@ public class Decoder
                 default:
                     throw new Exception($"Please add support for field type: {attribute}");
             }
-                            
-        }
 
         return method;
     }

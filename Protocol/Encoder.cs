@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Text;
 using AMQPClient.Protocol.Attributes;
 using AMQPClient.Protocol.Methods;
 
@@ -9,7 +8,6 @@ public class Encoder
 {
     public static byte[] MarshalMethodFrame<T>(T methodFrame) where T : Method
     {
-
         var writer = new BinWriter();
         var methodAttribute = (MethodDefAttribute)methodFrame.GetType().GetCustomAttribute(typeof(MethodDefAttribute))!;
         // Console.WriteLine($"Marshal method {methodFrame.GetType()}, CID {methodAttribute.ClassId} MID {methodAttribute.MethodId}");
@@ -30,7 +28,6 @@ public class Encoder
             .OrderBy(data => data.FieldAttribute.index);
 
         foreach (var (property, attribute) in propertiesWithAttrs)
-        {
             switch (attribute)
             {
                 case ByteField attr:
@@ -64,7 +61,6 @@ public class Encoder
                 default:
                     throw new Exception($"Unrecognized {attribute.GetType().Name}");
             }
-        }
 
         return writer.ToArray();
     }

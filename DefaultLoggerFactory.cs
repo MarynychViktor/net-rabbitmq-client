@@ -6,7 +6,7 @@ public class DefaultLoggerFactory
 {
     public static ILogger<T> CreateLogger<T>()
     {
-        using ILoggerFactory factory = LoggerFactory.Create(builder => builder.AddConsole());
+        using var factory = LoggerFactory.Create(builder => builder.AddConsole());
         return factory.CreateLogger<T>();
     }
 }

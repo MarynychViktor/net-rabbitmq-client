@@ -5,9 +5,9 @@ namespace AMQPClient.Protocol;
 // FIXME: review with more efficient approach
 public class BinReader : BinaryReader
 {
-    private Stream _stream;
+    private readonly Stream _stream;
 
-    public BinReader(byte[] bytes): this(new MemoryStream(bytes))
+    public BinReader(byte[] bytes) : this(new MemoryStream(bytes))
     {
     }
 
@@ -18,8 +18,8 @@ public class BinReader : BinaryReader
 
     public Dictionary<string, object> ReadFieldTable()
     {
-        uint tableSize = ReadUInt32();
-        long endPos = _stream.Position + tableSize;
+        var tableSize = ReadUInt32();
+        var endPos = _stream.Position + tableSize;
         Dictionary<string, object> properties = new();
 
         while (_stream.Position < endPos)
@@ -33,23 +33,23 @@ public class BinReader : BinaryReader
 
     public (string, object) ReadFieldValuePair()
     {
-        string fieldName = ReadShortStr();
+        var fieldName = ReadShortStr();
 
-        char val = ReadChar();
+        var val = ReadChar();
 
         return (fieldName, ReadFieldValue(val));
     }
 
     public object ReadFieldValue()
     {
-        char fieldType = ReadChar();
+        var fieldType = ReadChar();
         return ReadFieldValue(fieldType);
     }
 
     public string ReadShortStr()
     {
-        byte strLen = ReadByte();
-        byte[] bytes = ReadBytes(strLen);
+        var strLen = ReadByte();
+        var bytes = ReadBytes(strLen);
 
         return Encoding.ASCII.GetString(bytes);
     }
@@ -57,7 +57,7 @@ public class BinReader : BinaryReader
     public string ReadLongStr()
     {
         long size = ReadUInt32();
-        byte[] bytes = ReadBytes((int)size);
+        var bytes = ReadBytes((int)size);
         // return Encoding.ASCII.GetString(bytes);
         return Encoding.ASCII.GetString(bytes);
     }
@@ -79,7 +79,7 @@ public class BinReader : BinaryReader
         var bytes = ReadBytesInMachineOrder(8);
         return BitConverter.ToInt64(bytes);
     }
- 
+
     public override ushort ReadUInt16()
     {
         var bytes = ReadBytesInMachineOrder(2);
@@ -136,7 +136,8 @@ public class BinReader : BinaryReader
                 return ReadSingle();
             case 'd':
                 return ReadDouble();
-            case 'D': case 'A':
+            case 'D':
+            case 'A':
                 throw new Exception("Unsupported Decimal type");
             case 's':
                 return ReadShortStr();
@@ -153,10 +154,7 @@ public class BinReader : BinaryReader
     {
         var bytes = ReadBytes(size);
 
-        if (BitConverter.IsLittleEndian)
-        {
-            Array.Reverse(bytes);
-        }
+        if (BitConverter.IsLittleEndian) Array.Reverse(bytes);
 
         return bytes;
     }
@@ -164,69 +162,32 @@ public class BinReader : BinaryReader
     public HeaderProperties ReadProperties()
     {
         HeaderProperties props = new();
-        HeaderPropertiesFlags flags = (HeaderPropertiesFlags)ReadUInt16();
+        var flags = (HeaderPropertiesFlags)ReadUInt16();
 
-        if ((flags & HeaderPropertiesFlags.ContentType) != 0)
-        {
-            props.ContentType = ReadShortStr();
-        }
-        
-        if ((flags & HeaderPropertiesFlags.ContentEncoding) != 0)
-        {
-            props.ContentEncoding = ReadShortStr();
-        }
-                
-        if ((flags & HeaderPropertiesFlags.Headers) != 0)
-        {
-            props.Headers = ReadFieldTable();
-        }
-                        
-        if ((flags & HeaderPropertiesFlags.DeliveryMode) != 0)
-        {
-            props.DeliveryMode = (MessageDeliveryMode)ReadByte();
-            // TODO: review
-            // props.Headers = reader.ReadFieldTable();
-        }
-                        
-        if ((flags & HeaderPropertiesFlags.Priority) != 0)
-        {
-            props.Priority = ReadByte();
-        }
-                                
-        if ((flags & HeaderPropertiesFlags.CorrelationId) != 0)
-        {
-            props.CorrelationId = ReadShortStr();
-        }
-        
-        if ((flags & HeaderPropertiesFlags.ReplyTo) != 0)
-        {
-            props.ReplyTo = ReadShortStr();
-        }   
+        if ((flags & HeaderPropertiesFlags.ContentType) != 0) props.ContentType = ReadShortStr();
 
-        if ((flags & HeaderPropertiesFlags.Expiration) != 0)
-        {
-            props.Expiration = ReadShortStr();
-        }   
+        if ((flags & HeaderPropertiesFlags.ContentEncoding) != 0) props.ContentEncoding = ReadShortStr();
 
-        if ((flags & HeaderPropertiesFlags.MessageId) != 0)
-        {
-            props.MessageId = ReadShortStr();
-        }   
+        if ((flags & HeaderPropertiesFlags.Headers) != 0) props.Headers = ReadFieldTable();
 
-        if ((flags & HeaderPropertiesFlags.Timestamp) != 0)
-        {
-            props.Timestamp = ReadUInt64();
-        }  
-        
-        if ((flags & HeaderPropertiesFlags.Type) != 0)
-        {
-            props.Type = ReadShortStr();
-        }  
+        if ((flags & HeaderPropertiesFlags.DeliveryMode) != 0) props.DeliveryMode = (MessageDeliveryMode)ReadByte();
+        // TODO: review
+        // props.Headers = reader.ReadFieldTable();
+        if ((flags & HeaderPropertiesFlags.Priority) != 0) props.Priority = ReadByte();
 
-        if ((flags & HeaderPropertiesFlags.UserId) != 0)
-        {
-            props.UserId = ReadShortStr();
-        }
+        if ((flags & HeaderPropertiesFlags.CorrelationId) != 0) props.CorrelationId = ReadShortStr();
+
+        if ((flags & HeaderPropertiesFlags.ReplyTo) != 0) props.ReplyTo = ReadShortStr();
+
+        if ((flags & HeaderPropertiesFlags.Expiration) != 0) props.Expiration = ReadShortStr();
+
+        if ((flags & HeaderPropertiesFlags.MessageId) != 0) props.MessageId = ReadShortStr();
+
+        if ((flags & HeaderPropertiesFlags.Timestamp) != 0) props.Timestamp = ReadUInt64();
+
+        if ((flags & HeaderPropertiesFlags.Type) != 0) props.Type = ReadShortStr();
+
+        if ((flags & HeaderPropertiesFlags.UserId) != 0) props.UserId = ReadShortStr();
 
         return props;
     }

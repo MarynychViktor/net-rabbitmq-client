@@ -4,17 +4,19 @@ namespace AMQPClient.Protocol;
 
 public class AmqpFrame
 {
-    public FrameType Type { get; protected set; }
-    public short Channel { get; }
-    // public byte[] Body { get; set; }
-    public byte[] Payload { get; }
-
     public AmqpFrame(short channel, byte[] payload, FrameType type)
     {
         Channel = channel;
         Payload = payload;
         Type = type;
     }
+
+    public FrameType Type { get; protected set; }
+
+    public short Channel { get; }
+
+    // public byte[] Body { get; set; }
+    public byte[] Payload { get; }
 
     public virtual byte[] ToBytes()
     {
@@ -31,17 +33,17 @@ public class AmqpFrame
 
 public class AmqpMethodFrame : AmqpFrame
 {
+    public AmqpMethodFrame(short channel, Method payload) : base(channel, new byte[] { }, FrameType.Method)
+    {
+        Method = payload;
+    }
+
     public Method Method { get; set; }
     public HeaderProperties? Properties { get; set; }
     public long? BodyLength { get; set; }
     public byte[]? Body { get; set; }
 
-    public AmqpMethodFrame(short channel, Method payload) : base(channel, new byte[]{}, FrameType.Method)
-    {
-        Method = payload;
-    }
-    
-    
+
     public override byte[] ToBytes()
     {
         var writer = new BinWriter();
@@ -61,5 +63,5 @@ public enum FrameType
     Method = 1,
     ContentHeader = 2,
     Body = 3,
-    Heartbeat = 8,
+    Heartbeat = 8
 }

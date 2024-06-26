@@ -1,18 +1,18 @@
 namespace AMQPClient.Protocol;
 
-
 public class AmqpHeaderFrame : AmqpFrame
 {
-    public short ClassId { get; }
-    public long BodyLength { get; }
-    public HeaderProperties Properties { get; }
-
-    public AmqpHeaderFrame(short channel, short classId, long bodyLength,  HeaderProperties properties) : base(channel, new byte[] {}, FrameType.ContentHeader)
+    public AmqpHeaderFrame(short channel, short classId, long bodyLength, HeaderProperties properties) : base(channel,
+        new byte[] { }, FrameType.ContentHeader)
     {
         BodyLength = bodyLength;
         ClassId = classId;
         Properties = properties;
     }
+
+    public short ClassId { get; }
+    public long BodyLength { get; }
+    public HeaderProperties Properties { get; }
 
     public override byte[] ToBytes()
     {
