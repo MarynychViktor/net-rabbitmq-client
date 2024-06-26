@@ -143,22 +143,22 @@ public class BinWriter : BinaryWriter
         WriteInBigEndian(BitConverter.GetBytes(value));
     }
 
-    public void WriteInBigEndian(byte[] bytes)
-    {
-        Array.Reverse(bytes);
-        Write(bytes);
-    }
-
-    public void WriteInBigEndian(Span<byte> bytes)
-    {
-        bytes.Reverse();
-        Write(bytes);
-    }
-
     public byte[] ToArray()
     {
         if (_stream is MemoryStream memoryStream) return memoryStream.ToArray();
 
         throw new Exception("Not supported method");
+    }
+
+    private void WriteInBigEndian(byte[] bytes)
+    {
+        Array.Reverse(bytes);
+        Write(bytes);
+    }
+
+    private void WriteInBigEndian(Span<byte> bytes)
+    {
+        bytes.Reverse();
+        Write(bytes);
     }
 }
