@@ -5,6 +5,10 @@ Main goal of this project is to create basic implementation of amqp-0-9-1 protoc
 purposes
 
 ### Usage example
+**1. Connection**
+
+Connection creation with basic set of options 
+> TODO: add support for auth mechanism selection, TLS, advanced connections options
 ```c#
 var connectionFactory = new ConnectionFactory();
 var connection = await connectionFactory.CreateConnectionAsync(options =>
@@ -16,22 +20,43 @@ var connection = await connectionFactory.CreateConnectionAsync(options =>
     options.Password = "secret";
 });
 
+//....
+```
+**2. Channel**
+```c#
+//....
 var channel = await connection.CreateChannelAsync();
+
+// Do something with channel
+
+await channel.Close();
+```
+**3. Exchange and Queue**
+```c#
+//....
 var exchangeName = "foo-exchange";
 var routingKey = "foo-bar-key";
 
 var queueName = await channel.QueueDeclare();
-await channel.ExchangeDeclare(exchangeName);
-await channel.QueueBind(queueName, exchangeName, routingKey);
 
-await channel.BasicConsume(queueName, async (envelope) =>
+await channel.ExchangeDeclare(exchangeName);
+
+await channel.QueueBind(queueName, exchangeName, routingKey);
+//....
+```
+**4. Basic**
+> TODO: add support for other basic methods
+```c#
+//...
+await channel.BasicConsume(queueName, async (message) =>
 {
-    Console.WriteLine($"Received message {Encoding.Default.GetString(envelope.Payload.Content)}");
-    await channel.BasicAck(envelope);
+    Console.WriteLine($"Received message {Encoding.Default.GetString(message.Payload.Content)}");
+    await channel.BasicAck(message);
 });
 
 await channel.BasicPublishAsync(exchangeName, routingKey, new Message("Hello from app!"u8.ToArray()));
 ```
+
 ### Roadmap
 
 - [x] Handshake with AMQP server
