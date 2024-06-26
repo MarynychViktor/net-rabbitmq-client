@@ -2,11 +2,9 @@ using AMQPClient.Protocol.Attributes;
 
 namespace AMQPClient.Protocol.Methods.Channels;
 
-public class CloseMethod : Method
+[MethodDef(classId: 20, methodId: 40)]
+public class ChannelCloseMethod : Method
 {
-    public short ClassId => 20;
-    public short MethodId => 40;
-
     [ShortField(0)]
     public short ReplyCode { get; set; } = 320;
 

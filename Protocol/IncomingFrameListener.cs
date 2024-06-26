@@ -97,7 +97,7 @@ public class IncomingFrameListener
 
             var envelope = new AmqpEnvelope(method, envelopePayload);
             await PublishMethod(methodFrame);
-            _channels[methodFrame.Channel].HandleEnvelopeAsync(envelope);
+            // _channels[methodFrame.Channel].HandleEnvelopeAsync(envelope);
             return;
         }
         // if (method.HasBody())

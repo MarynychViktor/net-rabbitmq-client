@@ -51,6 +51,22 @@ public class InternalChannel : ChannelBase
                             Console.WriteLine($"Set result #{frame.Method}");
                             result.SetResult(frame);
                         }
+
+                        if (frame.Method.HasBody())
+                        {
+                            Console.WriteLine("has body");
+                            var envelopePayload = new AmqpEnvelopePayload(
+                                frame.Properties,
+                                frame.Body
+                            );
+
+                            var envelope = new AmqpEnvelope(frame.Method, envelopePayload);
+                            if (envelope.Method is BasicDeliver method)
+                            {
+                                BasicConsumers[method.ConsumerTag].Invoke(envelope);
+                                return Task.CompletedTask;
+                            }
+                        }
                         break;
                 }
             }

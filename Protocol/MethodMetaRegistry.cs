@@ -17,6 +17,8 @@ public static class MethodMetaRegistry
         // Channel
         {2010, typeof(ChannelOpenMethod)},
         {2011, typeof(ChannelOpenOkMethod)},
+        {2040, typeof(ChannelCloseMethod)},
+        {2041, typeof(ChannelCloseOkMethod)},
         // Exchange
         {4010, typeof(ExchangeDeclare)},
         {4011, typeof(ExchangeDeclareOk)},
