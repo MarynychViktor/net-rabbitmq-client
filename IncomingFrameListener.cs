@@ -52,14 +52,12 @@ public class IncomingFrameListener
                 }
             }
         }
-        catch (Exception e)
+        catch (OperationCanceledException e)
         {
-            Console.WriteLine($"-------------------Listener failed with : {e}");
-            throw;
-        }
-        finally
+            Logger.LogWarning("Frame loop cancelled");
+        } catch (Exception e)
         {
-            Console.WriteLine("-------------------Listener exited");
+            Logger.LogError("Frame loop failed with {msg}", e.ToString());
         }
     }
 
@@ -72,8 +70,7 @@ public class IncomingFrameListener
     {
         var methodFrame = (AmqpMethodFrame)_frame;
         var method = methodFrame.Method;
-        var (classId, methodId) = methodFrame.Method.ClassMethodId();
-        Logger.LogInformation("Received method frame '{typeName}'", method.GetType().Name);
+        Logger.LogDebug("Received method frame {method}", method);
 
         if (method.HasBody())
         {

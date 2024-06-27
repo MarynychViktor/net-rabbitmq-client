@@ -5,7 +5,15 @@ namespace AMQPClient.Protocol.Methods.Connection;
 [MethodDef(10, 50)]
 public class ConnectionClose : Method
 {
-    [ShortField(2)] public short ReplyCode { get; set; }
+    [ShortField(0)]
+    public short ReplyCode { get; set; } = 320;
 
-    [ShortStringField(3)] public string ReplyText { get; set; }
+    [ShortStringField(1)]
+    public string ReplyText { get; set; } = "Closed by peer";
+    
+    [ShortField(2)]
+    public short ReasonClassId { get; set; } = 0;
+
+    [ShortField(3)]
+    public short ReasonMethodId { get; set; } = 0;
 }

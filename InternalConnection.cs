@@ -21,23 +21,32 @@ public class InternalConnection
     private short _heartbeatInterval = 60;
     private long _lastFrameSent;
     private long _lastFrameReceived;
-    private SystemChannel _systemChannel;
+    private CancellationTokenSource _listenersCancellationSource;
+    internal SystemChannel SystemChannel { get; set; }
     private ILogger<InternalConnection> Logger { get; } = DefaultLoggerFactory.CreateLogger<InternalConnection>();
 
     public InternalConnection(ConnectionParams @params)
     {
         _params = @params;
     }
-
+    
     public async Task StartAsync()
     {
         _amqpFrameStream = CreateStreamReader();
         await HandshakeAsync();
-        _systemChannel = CreateSystemChannel();
-        StartIncomingFramesListener();
-        StartHeartbeatFrameListener();
+        SystemChannel = CreateSystemChannel();
+        _listenersCancellationSource = new CancellationTokenSource();
+        StartIncomingFramesListener(_listenersCancellationSource.Token);
+        StartHeartbeatFrameListener(_listenersCancellationSource.Token);
     }
-    
+
+    public async Task CloseAsync()
+    {
+        await _listenersCancellationSource.CancelAsync();
+        await _amqpFrameStream.DisposeAsync();
+        _amqpFrameStream = null;
+    }
+
     private void StartHeartbeatFrameListener(CancellationToken cancellationToken = default)
     {
         Task.Run(async () =>
@@ -55,7 +64,7 @@ public class InternalConnection
 
                 if (secondsToNextFrame <= 0)
                 {
-                    Logger.LogInformation("***Heartbeat frame sent***");
+                    Logger.LogDebug("***Heartbeat frame sent***");
                     var heartbeatFrame = new byte[] { 8, 0, 0, 0, 0, 0, 0, 0xCE };
                     await _amqpFrameStream.SendRawAsync(heartbeatFrame);
                     await Task.Delay(TimeSpan.FromSeconds(frequency), cancellationToken);
@@ -101,6 +110,7 @@ public class InternalConnection
             var bytes = Encoder.MarshalMethodFrame(method);
             await _amqpFrameStream.SendFrameAsync(new AmqpFrame(DefaultChannelId, bytes, FrameType.Method));
         }
+        Logger.LogDebug("Handshake started");
 
         var protocolHeader = "AMQP"u8.ToArray().Concat(new byte[] { 0, 0, 9, 1 }).ToArray();
         await _amqpFrameStream.SendRawAsync(protocolHeader);
@@ -147,7 +157,7 @@ public class InternalConnection
         // TODO: handle response?
         var _openOkMethod = (OpenOkMethod)nextFrame.Method;
 
-        Console.WriteLine("[InternalConnection]Handshake completed");
+        Logger.LogDebug("Handshake completed");
     }
 
     public async Task<IChannel> OpenChannelAsync()
@@ -160,7 +170,7 @@ public class InternalConnection
     private SystemChannel CreateSystemChannel()
     {
         var trxChannel = Channel.CreateUnbounded<object>();
-        var channel = new SystemChannel(trxChannel, _amqpFrameStream);
+        var channel = new SystemChannel(trxChannel, _amqpFrameStream, this);
         _channels.Add(channel.ChannelId, channel);
         _channelWriters[channel.ChannelId] = trxChannel.Writer;
         channel.StartListener();
@@ -183,24 +193,6 @@ public class InternalConnection
     {
         var listener = new IncomingFrameListener(_amqpFrameStream, _channels, _channelWriters);
         Task.Run(async () => await listener.StartAsync(cancellationToken), cancellationToken);
-    }
-
-    internal async Task SendEnvelopeAsync(short channelId, AmqpEnvelope envelope)
-    {
-        var properties = new HeaderProperties();
-        var body = envelope.Payload!.Content;
-        var methodFrame = new AmqpMethodFrame(channelId, envelope.Method);
-
-        await _amqpFrameStream.SendFrameAsync(methodFrame);
-
-        if (envelope.Payload == null) return;
-
-        var headerFrame =
-            new AmqpHeaderFrame(channelId, envelope.Method.ClassMethodId().Item1, body.Length, properties);
-        await _amqpFrameStream.SendFrameAsync(headerFrame);
-
-        var bodyFrame = new AmqpBodyFrame(channelId, body);
-        await _amqpFrameStream.SendFrameAsync(bodyFrame);
     }
 
     private short NextChannelId()

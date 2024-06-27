@@ -1,32 +1,24 @@
-using System.Collections.Concurrent;
 using System.Threading.Channels;
 using AMQPClient.Protocol;
-using AMQPClient.Protocol.Methods;
-using AMQPClient.Protocol.Methods.Basic;
-using AMQPClient.Protocol.Methods.Channels;
-using AMQPClient.Protocol.Methods.Exchanges;
-using AMQPClient.Protocol.Methods.Queues;
-using AMQPClient.Protocol.Types;
+using AMQPClient.Protocol.Methods.Connection;
 using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;
 
-public class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameSender)
+public class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameSender, InternalConnection connection)
     : ChannelBase(frameSender, 0)
 {
-    private readonly Dictionary<string, Action<AmqpEnvelope>> _consumersByTags = new();
     private ChannelReader<object> RxChannel => trxChannel.Reader;
-    private ILogger<ChannelImpl> Logger { get; } = DefaultLoggerFactory.CreateLogger<ChannelImpl>();
+    private ILogger<SystemChannel> Logger { get; } = DefaultLoggerFactory.CreateLogger<SystemChannel>();
     private CancellationTokenSource _listenerCancellationSource;
 
-    public async Task Close()
+    public async Task CloseConnection()
     {
-        var method = new ChannelCloseMethod();
-        IsClosed = true;
-        await CallMethodAsync<ChannelCloseOkMethod>(ChannelId, method, checkForClosed: false);
+        var method = new ConnectionClose();
+        await CallMethodAsync<ConnectionCloseOk>(ChannelId, method, checkForClosed: false);
         await _listenerCancellationSource.CancelAsync();
+        await connection.CloseAsync();
     }
-
 
     internal void StartListener()
     {
@@ -34,47 +26,46 @@ public class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameSen
         var cancellationToken = _listenerCancellationSource.Token;
         Task.Run(async () =>
         {
-            while (true)
+            try
             {
-                if (cancellationToken.IsCancellationRequested)
+                while (true)
                 {
-                    Logger.LogInformation("Stopping listener loop...");
-                    break;
-                }
-
-                Logger.LogDebug("Waiting for next frame....");
-                var nextFrame = await RxChannel.ReadAsync(cancellationToken);
-
-                switch (nextFrame)
-                {
-                    case AmqpMethodFrame frame:
-                        Logger.LogDebug("AmqpMethod frame received with type {type}", frame.Method);
-                        if (frame.Method.IsAsyncResponse())
-                        {
-                            if (!SyncMethodHandles[ChannelId]
-                                    .TryDequeue(out var result))
-                                throw new Exception("No task completion source found");
-
-                            result.SetResult(frame);
-                        }
-
-                        if (frame.Method.HasBody())
-                        {
-                            // TODO: remove envolope class
-                            var envelopePayload = new AmqpEnvelopePayload(
-                                frame.Properties,
-                                frame.Body
-                            );
-
-                            var envelope = new AmqpEnvelope(frame.Method, envelopePayload);
-                            if (envelope.Method is BasicDeliver method)
-                                _consumersByTags[method.ConsumerTag].Invoke(envelope);
-                        }
-
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        Logger.LogDebug("Stopping listener loop...");
                         break;
-                    default:
-                        throw new Exception("Unknown frame");
+                    }
+
+                    Logger.LogDebug("Waiting for next frame....");
+                    var nextFrame = await RxChannel.ReadAsync(cancellationToken);
+
+                    switch (nextFrame)
+                    {
+                        case AmqpMethodFrame frame:
+                            if (frame.Method.IsAsyncResponse())
+                            {
+                                if (!SyncMethodHandles[ChannelId]
+                                        .TryDequeue(out var result))
+                                    throw new Exception("No task completion source found");
+
+                                result.SetResult(frame);
+                                break;
+                            }
+
+                            throw new NotImplementedException();
+                            break;
+                        default:
+                            throw new Exception("Unknown frame");
+                    }
                 }
+            }
+            catch (OperationCanceledException e)
+            {
+                Logger.LogWarning("Frame loop exited");
+            } catch (Exception e)
+            {
+                Logger.LogError("StartListener loop failed with {msg}", e.Message);
+                throw;
             }
 
             return Task.CompletedTask;

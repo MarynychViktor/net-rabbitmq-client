@@ -28,13 +28,15 @@ public class Method
     public override string ToString()
     {
         var stringBuilder = new StringBuilder();
+        stringBuilder.Append($"{GetType().Name} {{");
 
         foreach (var propertyInfo in GetType().GetProperties())
             if (propertyInfo.PropertyType == typeof(Dictionary<string, object>))
                 FormatDictionary(propertyInfo.Name, (Dictionary<string, object>)propertyInfo.GetValue(this),
                     stringBuilder);
             else
-                stringBuilder.AppendLine($"{propertyInfo.Name}: {propertyInfo.GetValue(this)}");
+                stringBuilder.Append($"[{propertyInfo.Name}]: {propertyInfo.GetValue(this)}, ");
+        stringBuilder.Append('}');
 
         return stringBuilder.ToString();
     }
@@ -48,6 +50,6 @@ public class Method
             if (v.GetType() == typeof(Dictionary<string, object>))
                 FormatDictionary(k, (Dictionary<string, object>)v, stringBuilder, depth + 1);
             else
-                stringBuilder.AppendLine($"{new string('\t', depth + 1)}{k}: {v}");
+                stringBuilder.Append($"{new string('\t', depth + 1)}[{k}]: {v},");
     }
 }

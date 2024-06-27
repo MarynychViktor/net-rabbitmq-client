@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using AMQPClient.Protocol;
 using AMQPClient.Protocol.Methods;
-
 namespace AMQPClient;
 
 public abstract class ChannelBase : IAmqpChannel
@@ -45,5 +44,16 @@ public abstract class ChannelBase : IAmqpChannel
 
         var bytes = Encoder.MarshalMethodFrame(method);
         return FrameSender.SendFrameAsync(new AmqpFrame(channel, bytes, FrameType.Method));
+    }
+    
+    protected async Task CallMethodAsync(short channel, Method method, HeaderProperties properties, byte[]? body)
+    {
+        await CallMethodAsync(channel, method);
+
+        var headerFrame = new AmqpHeaderFrame(channel, method.ClassId, body?.Length ?? 0, properties);
+        await FrameSender.SendFrameAsync(headerFrame);
+
+        var bodyFrame = new AmqpBodyFrame(channel, body ?? []);
+        await FrameSender.SendFrameAsync(bodyFrame);
     }
 }

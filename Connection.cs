@@ -1,5 +1,3 @@
-using AMQPClient.Protocol;
-
 namespace AMQPClient;
 
 public class Connection
@@ -17,6 +15,11 @@ public class Connection
         var internalConnection = new InternalConnection(_connectionParams);
         await internalConnection.StartAsync();
         _internalConnection = internalConnection;
+    }
+
+    public async Task CloseAsync()
+    {
+        await _internalConnection.SystemChannel.CloseConnection();
     }
 
     public Task<IChannel> CreateChannelAsync()

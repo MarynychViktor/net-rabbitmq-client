@@ -21,11 +21,7 @@ public class ChannelImpl(
     private readonly Dictionary<string, Action<AmqpEnvelope>> _consumersByTags = new();
     private ChannelReader<object> RxChannel => trxChannel.Reader;
     private ILogger<ChannelImpl> Logger { get; } = DefaultLoggerFactory.CreateLogger<ChannelImpl>();
-
-    private readonly Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> _syncMethodHandles =
-        new();
     private CancellationTokenSource _listenerCancellationSource;
-    private bool _isClosed = false;
 
     public async Task ExchangeDeclare(string name, bool passive = false, bool durable = false, bool autoDelete = false,
         bool internalOnly = false, bool nowait = false)
@@ -64,7 +60,7 @@ public class ChannelImpl(
     public async Task Close()
     {
         var method = new ChannelCloseMethod();
-        _isClosed = true;
+        IsClosed = true;
         await CallMethodAsync<ChannelCloseOkMethod>(ChannelId, method, checkForClosed: false);
         await _listenerCancellationSource.CancelAsync();
     }
@@ -115,7 +111,7 @@ public class ChannelImpl(
         _consumersByTags.Add(response.Tag, consumer);
     }
 
-    public Task BasicPublishAsync(string exchange, string routingKey, Message message)
+    public async Task BasicPublishAsync(string exchange, string routingKey, Message message)
     {
         var method = new BasicPublish
         {
@@ -123,11 +119,7 @@ public class ChannelImpl(
             RoutingKey = routingKey
         };
 
-        var envelopePayload = new AmqpEnvelopePayload(message.Properties, message.Data);
-        var envelope = new AmqpEnvelope(method, envelopePayload);
-
-        throw new NotImplementedException();
-        // return Connection.SendEnvelopeAsync(ChannelId, envelope);
+        await CallMethodAsync(ChannelId, method, message.Properties, message.Data);
     }
 
     public async Task BasicAck(AmqpEnvelope message)
@@ -159,78 +151,62 @@ public class ChannelImpl(
     {
         Task.Run(async () =>
         {
-            while (true)
+            try
             {
-                if (cancellationToken.IsCancellationRequested)
+                while (true)
                 {
-                    Logger.LogInformation("Stopping listener loop...");
-                    break;
-                }
-
-                Logger.LogDebug("Waiting for next frame....");
-                var nextFrame = await RxChannel.ReadAsync(cancellationToken);
-
-                switch (nextFrame)
-                {
-                    case AmqpMethodFrame frame:
-                        Logger.LogDebug("AmqpMethod frame received with type {type}", frame.Method);
-                        if (frame.Method.IsAsyncResponse())
-                        {
-                            if (!_syncMethodHandles[ChannelId]
-                                    .TryDequeue(out var result))
-                                throw new Exception("No task completion source found");
-
-                            result.SetResult(frame);
-                        }
-
-                        if (frame.Method.HasBody())
-                        {
-                            // TODO: remove envolope class
-                            var envelopePayload = new AmqpEnvelopePayload(
-                                frame.Properties,
-                                frame.Body
-                            );
-
-                            var envelope = new AmqpEnvelope(frame.Method, envelopePayload);
-                            if (envelope.Method is BasicDeliver method)
-                                _consumersByTags[method.ConsumerTag].Invoke(envelope);
-                        }
-
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        Logger.LogInformation("Stopping listener loop...");
                         break;
-                    default:
-                        throw new Exception("Unknown frame");
-                }
-            }
+                    }
 
+                    Logger.LogDebug("Waiting for next frame....");
+                    var nextFrame = await RxChannel.ReadAsync(cancellationToken);
+
+                    switch (nextFrame)
+                    {
+                        case AmqpMethodFrame frame:
+                            Logger.LogDebug("AmqpMethod frame received with type {type}", frame.Method);
+                            if (frame.Method.IsAsyncResponse())
+                            {
+                                if (!SyncMethodHandles[ChannelId]
+                                        .TryDequeue(out var result))
+                                    throw new Exception("No task completion source found");
+
+                                result.SetResult(frame);
+                                break;
+                            }
+
+                            if (frame.Method.HasBody())
+                            {
+                                // TODO: remove envolope class
+                                var envelopePayload = new AmqpEnvelopePayload(
+                                    frame.Properties,
+                                    frame.Body
+                                );
+
+                                var envelope = new AmqpEnvelope(frame.Method, envelopePayload);
+                                if (envelope.Method is BasicDeliver method)
+                                {
+                                    _consumersByTags[method.ConsumerTag].Invoke(envelope);
+                                    break;
+                                }
+                            }
+
+                            throw new NotImplementedException();
+                        default:
+                            throw new Exception("Unknown frame");
+                    }
+                }
+            } catch (OperationCanceledException e) {
+                Logger.LogWarning("Frame loop exited");
+            } catch (Exception e)
+            {
+                Logger.LogCritical("StartListener loop failed with {msg}", e.Message);
+                throw;
+            }
             return Task.CompletedTask;
         }, cancellationToken);
-    }
-
-    private async Task<TResponse> CallMethodAsync<TResponse>(short channelId, Method method, bool checkForClosed = true)
-        where TResponse : Method, new()
-    {
-        var taskSource = new TaskCompletionSource<AmqpMethodFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
-        await CallMethodAsync(channelId, method, checkForClosed);
-
-        if (!_syncMethodHandles.TryGetValue(channelId, out var sourcesQueue))
-        {
-            sourcesQueue = new ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>();
-            _syncMethodHandles[channelId] = sourcesQueue;
-        }
-
-        sourcesQueue.Enqueue(taskSource);
-
-        return (TResponse)(await taskSource.Task).Method;
-    }
-
-    private Task CallMethodAsync(short channel, Method method, bool checkForClosed = true)
-    {
-        if (checkForClosed && _isClosed)
-        {
-            throw new Exception("Unable to call method on closed channel");
-        }
-
-        var bytes = Encoder.MarshalMethodFrame(method);
-        return FrameSender.SendFrameAsync(new AmqpFrame(channel, bytes, FrameType.Method));
     }
 }

@@ -14,6 +14,7 @@ public static class MethodMetaRegistry
         { 1030, typeof(TuneMethod) },
         { 1041, typeof(OpenOkMethod) },
         { 1050, typeof(ConnectionClose) },
+        { 1051, typeof(ConnectionCloseOk) },
         // Channel
         { 2010, typeof(ChannelOpenMethod) },
         { 2011, typeof(ChannelOpenOkMethod) },
@@ -43,7 +44,8 @@ public static class MethodMetaRegistry
         typeof(ExchangeDeleteOk),
         typeof(QueueDeclareOk),
         typeof(QueueBindOk),
-        typeof(BasicConsumeOk)
+        typeof(BasicConsumeOk),
+        typeof(ConnectionCloseOk),
     };
 
     private static readonly IReadOnlyList<Type> MethodsWithBody = new List<Type>
