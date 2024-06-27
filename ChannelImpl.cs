@@ -90,7 +90,7 @@ public class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSende
         await CallMethodAsync<QueueBindOk>(method);
     }
 
-    public async Task BasicConsume(string queue, Action<IMessage> consumer)
+    public async Task<string> BasicConsume(string queue, Action<IMessage> consumer)
     {
         var method = new BasicConsume
         {
@@ -101,6 +101,27 @@ public class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSende
         Logger.LogDebug("Registered consumer with tag: {tag}", response.Tag);
 
         _consumersByTags.Add(response.Tag, consumer);
+        return response.Tag;
+    }
+
+    public async Task BasicCancel(string consumerTag, bool noWait = false)
+    {
+        var method = new BasicCancel()
+        {
+            ConsumerTag = consumerTag,
+            NoWait = (byte)(noWait ? 1 : 0)
+        };
+
+        if (noWait)
+        {
+            await CallMethodAsync(method);
+            _consumersByTags.Remove(consumerTag);
+        }
+        else
+        {
+            var response = await CallMethodAsync<BasicCancelOk>(method);
+            _consumersByTags.Remove(response.ConsumerTag);
+        }
     }
 
     public async Task BasicPublishAsync(string exchange, string routingKey, IMessage message)

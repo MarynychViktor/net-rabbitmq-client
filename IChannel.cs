@@ -10,7 +10,8 @@ public interface IChannel
     public Task ExchangeDelete(string name);
     public Task<string> QueueDeclare(string name = "");
     public Task QueueBind(string queue, string exchange, string routingKey);
-    public Task BasicConsume(string queue, Action<IMessage> consumer);
+    public Task<string> BasicConsume(string queue, Action<IMessage> consumer);
+    public Task BasicCancel(string consumerTag, bool noWait = false);
     public Task BasicPublishAsync(string exchange, string routingKey, IMessage message);
     public Task BasicAck(IMessage message);
 }
