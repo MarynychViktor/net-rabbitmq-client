@@ -15,7 +15,7 @@ public class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameSen
     public async Task CloseConnection()
     {
         var method = new ConnectionClose();
-        await CallMethodAsync<ConnectionCloseOk>(ChannelId, method, checkForClosed: false);
+        await CallMethodAsync<ConnectionCloseOk>(method, checkForClosed: false);
         await _listenerCancellationSource.CancelAsync();
         await connection.CloseAsync();
     }

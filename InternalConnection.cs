@@ -4,7 +4,6 @@ using System.Threading.Channels;
 using AMQPClient.Protocol;
 using AMQPClient.Protocol.Methods;
 using AMQPClient.Protocol.Methods.Connection;
-using AMQPClient.Protocol.Types;
 using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;

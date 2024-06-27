@@ -5,29 +5,29 @@ namespace AMQPClient;
 
 public abstract class ChannelBase : IAmqpChannel
 {
-    protected readonly IAmqpFrameSender FrameSender;
+    private readonly IAmqpFrameSender _frameSender;
     protected readonly Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> SyncMethodHandles =
         new();
     protected bool IsClosed { get; set; }
 
     public ChannelBase(IAmqpFrameSender frameSender, short id)
     {
-        FrameSender = frameSender;
+        _frameSender = frameSender;
         ChannelId = id;
     }
 
     public short ChannelId { get; }
     
-    protected async Task<TResponse> CallMethodAsync<TResponse>(short channelId, Method method, bool checkForClosed = true)
+    protected async Task<TResponse> CallMethodAsync<TResponse>(Method method, bool checkForClosed = true)
         where TResponse : Method, new()
     {
         var taskSource = new TaskCompletionSource<AmqpMethodFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
-        await CallMethodAsync(channelId, method, checkForClosed);
+        await CallMethodAsync(method, checkForClosed);
 
-        if (!SyncMethodHandles.TryGetValue(channelId, out var sourcesQueue))
+        if (!SyncMethodHandles.TryGetValue(ChannelId, out var sourcesQueue))
         {
             sourcesQueue = new ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>();
-            SyncMethodHandles[channelId] = sourcesQueue;
+            SyncMethodHandles[ChannelId] = sourcesQueue;
         }
 
         sourcesQueue.Enqueue(taskSource);
@@ -35,7 +35,7 @@ public abstract class ChannelBase : IAmqpChannel
         return (TResponse)(await taskSource.Task).Method;
     }
 
-    protected Task CallMethodAsync(short channel, Method method, bool checkForClosed = true)
+    protected Task CallMethodAsync(Method method, bool checkForClosed = true)
     {
         if (checkForClosed && IsClosed)
         {
@@ -43,17 +43,17 @@ public abstract class ChannelBase : IAmqpChannel
         }
 
         var bytes = Encoder.MarshalMethodFrame(method);
-        return FrameSender.SendFrameAsync(new AmqpFrame(channel, bytes, FrameType.Method));
+        return _frameSender.SendFrameAsync(new AmqpFrame(ChannelId, bytes, FrameType.Method));
     }
     
-    protected async Task CallMethodAsync(short channel, Method method, HeaderProperties properties, byte[]? body)
+    protected async Task CallMethodAsync(Method method, HeaderProperties properties, byte[]? body)
     {
-        await CallMethodAsync(channel, method);
+        await CallMethodAsync(method);
 
-        var headerFrame = new AmqpHeaderFrame(channel, method.ClassId, body?.Length ?? 0, properties);
-        await FrameSender.SendFrameAsync(headerFrame);
+        var headerFrame = new AmqpHeaderFrame(ChannelId, method.ClassId, body?.Length ?? 0, properties);
+        await _frameSender.SendFrameAsync(headerFrame);
 
-        var bodyFrame = new AmqpBodyFrame(channel, body ?? []);
-        await FrameSender.SendFrameAsync(bodyFrame);
+        var bodyFrame = new AmqpBodyFrame(ChannelId, body ?? []);
+        await _frameSender.SendFrameAsync(bodyFrame);
     }
 }

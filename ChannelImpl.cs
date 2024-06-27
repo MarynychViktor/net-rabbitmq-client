@@ -41,11 +41,11 @@ public class ChannelImpl(
 
         if (nowait)
         {
-            await CallMethodAsync(ChannelId, method);
+            await CallMethodAsync(method);
             return;
         }
 
-        await CallMethodAsync<ExchangeDeclareOk>(ChannelId, method);
+        await CallMethodAsync<ExchangeDeclareOk>(method);
     }
 
     public async Task Flow(bool active)
@@ -54,14 +54,14 @@ public class ChannelImpl(
         {
             Active = (byte)(active ? 1 : 0)
         };
-        await CallMethodAsync<ChannelFlowOkMethod>(ChannelId, method);
+        await CallMethodAsync<ChannelFlowOkMethod>(method);
     }
 
     public async Task Close()
     {
         var method = new ChannelCloseMethod();
         IsClosed = true;
-        await CallMethodAsync<ChannelCloseOkMethod>(ChannelId, method, checkForClosed: false);
+        await CallMethodAsync<ChannelCloseOkMethod>(method, checkForClosed: false);
         await _listenerCancellationSource.CancelAsync();
     }
 
@@ -72,7 +72,7 @@ public class ChannelImpl(
             Name = name
         };
 
-        await CallMethodAsync<ExchangeDeleteOk>(ChannelId, method);
+        await CallMethodAsync<ExchangeDeleteOk>(method);
     }
 
     // FIXME: add actual params to method
@@ -83,7 +83,7 @@ public class ChannelImpl(
             Name = name
         };
 
-        var result = await CallMethodAsync<QueueDeclareOk>(ChannelId, method);
+        var result = await CallMethodAsync<QueueDeclareOk>(method);
         return result.Name;
     }
 
@@ -96,7 +96,7 @@ public class ChannelImpl(
             Exchange = exchange,
             RoutingKey = routingKey
         };
-        await CallMethodAsync<QueueBindOk>(ChannelId, method);
+        await CallMethodAsync<QueueBindOk>(method);
     }
 
     // FIXME: add actual params to method
@@ -106,7 +106,7 @@ public class ChannelImpl(
         {
             Queue = queue
         };
-        var response = await CallMethodAsync<BasicConsumeOk>(ChannelId, method);
+        var response = await CallMethodAsync<BasicConsumeOk>(method);
         Console.WriteLine($"Registered consumer with tag{response.Tag}");
         _consumersByTags.Add(response.Tag, consumer);
     }
@@ -119,7 +119,7 @@ public class ChannelImpl(
             RoutingKey = routingKey
         };
 
-        await CallMethodAsync(ChannelId, method, message.Properties, message.Data);
+        await CallMethodAsync(method, message.Properties, message.Data);
     }
 
     public async Task BasicAck(AmqpEnvelope message)
@@ -132,7 +132,7 @@ public class ChannelImpl(
                 Multiple = 0
             };
 
-            await CallMethodAsync(ChannelId, method);
+            await CallMethodAsync(method);
 
             return;
         }
@@ -144,7 +144,7 @@ public class ChannelImpl(
     {
         _listenerCancellationSource = new CancellationTokenSource();
         StartListener(_listenerCancellationSource.Token);
-        await CallMethodAsync<ChannelOpenOkMethod>(channelId, new ChannelOpenMethod());
+        await CallMethodAsync<ChannelOpenOkMethod>(new ChannelOpenMethod());
     }
 
     private void StartListener(CancellationToken cancellationToken = default)
