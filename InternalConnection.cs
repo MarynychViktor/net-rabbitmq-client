@@ -9,6 +9,7 @@ using Microsoft.Extensions.Logging;
 namespace AMQPClient;
 
 // FIXME: handle errors
+// FIXME: stop all channels on connection close
 public class InternalConnection
 {
     private const short DefaultChannelId = 0;

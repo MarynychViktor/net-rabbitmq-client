@@ -5,15 +5,20 @@ namespace AMQPClient.Protocol.Methods.Exchanges;
 [MethodDef(40, 10)]
 public class ExchangeDeclare : Method
 {
-    [ShortField(0)] public short Reserved1 { get; set; }
+    [ShortField(0)]
+    public short Reserved1 { get; set; }
 
-    [ShortStringField(1)] public string Name { get; set; }
+    [ShortStringField(1)]
+    public string Name { get; set; }
+    
+    [ShortStringField(2)]
+    public string Type { get; set; } = "direct";
 
-    [ShortStringField(2)] public string Type { get; set; } = "direct";
+    [ByteField(3)]
+    public byte Flags { get; set; } = 0;
 
-    [ByteField(3)] public byte Flags { get; set; } = 0;
-
-    [PropertiesTableField(8)] public Dictionary<string, object> Arguments { get; set; } = new();
+    [PropertiesTableField(8)]
+    public Dictionary<string, object> Arguments { get; set; } = new();
 }
 
 [Flags]

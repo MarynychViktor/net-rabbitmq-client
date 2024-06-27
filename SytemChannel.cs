@@ -51,7 +51,21 @@ public class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameSen
                                 break;
                             }
 
-                            throw new NotImplementedException();
+                            switch (frame.Method)
+                            {
+                                case ConnectionClose closeMethod:
+                                    Logger.LogCritical("Closing connection\n {code}, {text} ", closeMethod.ReplyCode, closeMethod.ReplyText);
+                                    if (SyncMethodHandles.TryDequeue(out var result))
+                                    {
+                                        result.SetResult(new MethodResult(null, closeMethod.ReplyCode, closeMethod.ReplyText));
+                                    }
+
+                                    await CallMethodAsync(new ConnectionCloseOk());
+                                    await connection.CloseAsync();
+                                    break;
+                                default:
+                                    throw new NotImplementedException();
+                            }
                             break;
                         default:
                             throw new Exception("Unknown frame");
