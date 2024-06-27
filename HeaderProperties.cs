@@ -176,11 +176,3 @@ public enum MessageDeliveryMode
     NonPersistent = 1,
     Persistent = 2
 }
-
-// public class MessageMetadata
-// {
-//     public long DeliveryTag { get; set; }
-//     public bool Redelivered { get; set; }
-//     public String Exchange { get; set; }
-//     public String RoutingKey { get; set; }
-// }

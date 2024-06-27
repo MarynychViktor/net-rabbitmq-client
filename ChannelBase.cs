@@ -3,7 +3,7 @@ using AMQPClient.Protocol;
 using AMQPClient.Protocol.Methods;
 namespace AMQPClient;
 
-public abstract class ChannelBase : IAmqpChannel
+public abstract class ChannelBase
 {
     private readonly IAmqpFrameSender _frameSender;
     protected readonly Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> SyncMethodHandles =

@@ -99,7 +99,7 @@ public class BinWriter : BinaryWriter
                 WriteFieldTable(d);
                 break;
             default:
-                throw new Exception("failed to write");
+                throw new Exception("Failed to write value");
         }
     }
 

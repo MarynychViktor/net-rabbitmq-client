@@ -8,18 +8,15 @@ namespace AMQPClient;
 public class IncomingFrameListener
 {
     private readonly AmqpFrameStream _amqpFrameStream;
-    private readonly Dictionary<int, IAmqpChannel> _channels;
     private readonly IReadOnlyDictionary<short, ChannelWriter<object>> _channelWriters;
     private AmqpFrame? _frame;
 
     public IncomingFrameListener(
         AmqpFrameStream amqpFrameStream,
-        Dictionary<int, IAmqpChannel> channels,
         IReadOnlyDictionary<short, ChannelWriter<object>> channelWriters
     )
     {
         _amqpFrameStream = amqpFrameStream;
-        _channels = channels;
         _channelWriters = channelWriters;
     }
 

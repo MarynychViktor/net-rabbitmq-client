@@ -12,7 +12,6 @@ namespace AMQPClient;
 public class InternalConnection
 {
     private const short DefaultChannelId = 0;
-    private readonly Dictionary<int, IAmqpChannel> _channels = new();
     private readonly ConcurrentDictionary<short, ChannelWriter<object>> _channelWriters = new();
     private readonly ConnectionParams _params;
     private AmqpFrameStream _amqpFrameStream;
@@ -170,7 +169,6 @@ public class InternalConnection
     {
         var trxChannel = Channel.CreateUnbounded<object>();
         var channel = new SystemChannel(trxChannel, _amqpFrameStream, this);
-        _channels.Add(channel.ChannelId, channel);
         _channelWriters[channel.ChannelId] = trxChannel.Writer;
         channel.StartListener();
 
@@ -182,7 +180,6 @@ public class InternalConnection
         var channelId = id ?? NextChannelId();
         var trxChannel = Channel.CreateUnbounded<object>();
         var channel = new ChannelImpl(trxChannel, _amqpFrameStream, channelId);
-        _channels.Add(channelId, channel);
         _channelWriters[channelId] = trxChannel.Writer;
 
         return channel;
@@ -190,7 +187,7 @@ public class InternalConnection
 
     private void StartIncomingFramesListener(CancellationToken cancellationToken = default)
     {
-        var listener = new IncomingFrameListener(_amqpFrameStream, _channels, _channelWriters);
+        var listener = new IncomingFrameListener(_amqpFrameStream, _channelWriters);
         Task.Run(async () => await listener.StartAsync(cancellationToken), cancellationToken);
     }
 

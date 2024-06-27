@@ -2,6 +2,8 @@ using AMQPClient.Protocol.Attributes;
 
 namespace AMQPClient.Protocol;
 
+// Current approach is very inefficient
+// TODO: to be reviewed
 public class Decoder
 {
     public static T CreateMethodFrame<T>(byte[] body) where T : class, new()

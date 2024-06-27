@@ -58,7 +58,6 @@ public class BinReader : BinaryReader
     {
         long size = ReadUInt32();
         var bytes = ReadBytes((int)size);
-        // return Encoding.ASCII.GetString(bytes);
         return Encoding.ASCII.GetString(bytes);
     }
 
@@ -171,8 +170,7 @@ public class BinReader : BinaryReader
         if ((flags & HeaderPropertiesFlags.Headers) != 0) props.Headers = ReadFieldTable();
 
         if ((flags & HeaderPropertiesFlags.DeliveryMode) != 0) props.DeliveryMode = (MessageDeliveryMode)ReadByte();
-        // TODO: review
-        // props.Headers = reader.ReadFieldTable();
+
         if ((flags & HeaderPropertiesFlags.Priority) != 0) props.Priority = ReadByte();
 
         if ((flags & HeaderPropertiesFlags.CorrelationId) != 0) props.CorrelationId = ReadShortStr();
