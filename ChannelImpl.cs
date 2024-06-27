@@ -150,6 +150,25 @@ public class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSende
             return;
         }
 
+        // TODO: check if reachable
+        throw new NotImplementedException();
+    }
+
+    public async Task BasicReject(IMessage message, bool requeue = false)
+    {
+        if (message.DeliveryTag is {} deliveryTag)
+        {
+            var method = new BasicReject()
+            {
+                Tag = deliveryTag,
+                Requeue = (byte)(requeue ? 1 : 0)
+            };
+
+            await CallMethodAsync(method);
+            return;
+        }
+
+        // TODO: check if reachable
         throw new NotImplementedException();
     }
 
