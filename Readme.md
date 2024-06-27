@@ -5,45 +5,28 @@ Main goal of this project is to create basic implementation of amqp-0-9-1 protoc
 purposes
 
 ### Usage example
-**1. Connection** ✅
-
-Connection creation with basic set of options 
-> TODO: add support for auth mechanism selection, TLS, advanced connections options
+#### Create connection
 ```c#
 var connectionFactory = new ConnectionFactory();
 var connection = await connectionFactory.CreateConnectionAsync(options =>
 {
-    options.Host = "localhost";
+    options.Host = "cow.rmq2.cloudamqp.com"; // "localhost";
     options.Port = 5672;
     options.Vhost = "foo";
     options.User = "bar";
     options.Password = "secret";
 });
-
-//....
 ```
-**2. Channel** ✅
+#### Create channel
 ```c#
-//....
 var channel = await connection.CreateChannelAsync();
 
 // Do something with channel
 
 await channel.Close();
 ```
-**3. Exchange and Queue**
-  1. **Exchange** ✅
-  2. **Queue** ❌
-  - [x] Implemented methods
-    - Declare
-    - Bind
-
-  - [ ] TODO:
-    - Unbind
-    - Purge
-    - Delete
+#### Declare exchange and bind queue
 ```c#
-//....
 var exchangeName = "foo-exchange";
 var routingKey = "foo-bar-key";
 
@@ -52,9 +35,42 @@ var queueName = await channel.QueueDeclare();
 await channel.ExchangeDeclare(exchangeName);
 
 await channel.QueueBind(queueName, exchangeName, routingKey);
-//....
 ```
-**4. Basic** ❌
+#### Publish message
+```c#
+await channel.BasicPublishAsync(exchangeName, routingKey, new Message("Hello from app!"u8.ToArray()));
+```
+#### Consume message
+```c#
+await channel.BasicConsume(queueName, async (message) =>
+{
+Console.WriteLine($"Received message {Encoding.Default.GetString(message.Payload.Content)}");
+await channel.BasicAck(message);
+});
+```
+
+### Roadmap
+**1. Connection** ✅
+Connection creation with basic set of options 
+> TODO: add support for auth mechanism selection, TLS, advanced connections options
+
+**2. Channel** ✅
+
+**3. Exchange** ✅
+
+**4. Queue** ❌
+- [x] Implemented methods
+    - Declare
+    - Bind
+
+- [ ] TODO:
+    - Unbind
+    - Purge
+    - Delete
+
+**5. Basic** ❌
+
+Some advanced methods not implemented
 - [x] Implemented methods
   - Consume
   - Publish
@@ -69,27 +85,8 @@ await channel.QueueBind(queueName, exchangeName, routingKey);
   - Return
   - Recover
 
-```c#
-//...
-await channel.BasicConsume(queueName, async (message) =>
-{
-    Console.WriteLine($"Received message {Encoding.Default.GetString(message.Payload.Content)}");
-    await channel.BasicAck(message);
-});
-
-await channel.BasicPublishAsync(exchangeName, routingKey, new Message("Hello from app!"u8.ToArray()));
-```
-**5. Tx** ❌
+**6. Tx** ❌
 
 Not implemented
 
-
-### Roadmap
-
-- [x] Handshake with AMQP server
-- [ ] Connection
-- [x] Channel
-- [ ] Queue
-- [x] Exchange
-- [ ] Basic
 
