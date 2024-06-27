@@ -1,4 +1,6 @@
-namespace AMQPClient.Protocol;
+using AMQPClient.Protocol;
+
+namespace AMQPClient;
 
 public interface IAmqpFrameSender
 {

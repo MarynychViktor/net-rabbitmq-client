@@ -1,8 +1,8 @@
-using System.Collections.Concurrent;
 using System.Threading.Channels;
+using AMQPClient.Protocol;
 using Microsoft.Extensions.Logging;
 
-namespace AMQPClient.Protocol;
+namespace AMQPClient;
 
 // FIXME: handle errors
 public class IncomingFrameListener

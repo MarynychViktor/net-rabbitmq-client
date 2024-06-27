@@ -15,9 +15,8 @@ namespace AMQPClient;
 public class ChannelImpl(
     Channel<object> trxChannel,
     IAmqpFrameSender frameSender,
-    InternalConnection connection,
     short id)
-    : ChannelBase(connection, id), IChannel
+    : ChannelBase(frameSender, id), IChannel
 {
     private readonly Dictionary<string, Action<AmqpEnvelope>> _consumersByTags = new();
     private ChannelReader<object> RxChannel => trxChannel.Reader;
@@ -127,7 +126,8 @@ public class ChannelImpl(
         var envelopePayload = new AmqpEnvelopePayload(message.Properties, message.Data);
         var envelope = new AmqpEnvelope(method, envelopePayload);
 
-        return _connection.SendEnvelopeAsync(ChannelId, envelope);
+        throw new NotImplementedException();
+        // return Connection.SendEnvelopeAsync(ChannelId, envelope);
     }
 
     public async Task BasicAck(AmqpEnvelope message)
@@ -231,6 +231,6 @@ public class ChannelImpl(
         }
 
         var bytes = Encoder.MarshalMethodFrame(method);
-        return frameSender.SendFrameAsync(new AmqpFrame(channel, bytes, FrameType.Method));
+        return FrameSender.SendFrameAsync(new AmqpFrame(channel, bytes, FrameType.Method));
     }
 }

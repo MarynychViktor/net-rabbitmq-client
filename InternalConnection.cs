@@ -1,12 +1,13 @@
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading.Channels;
+using AMQPClient.Protocol;
 using AMQPClient.Protocol.Methods;
 using AMQPClient.Protocol.Methods.Connection;
 using AMQPClient.Protocol.Types;
 using Microsoft.Extensions.Logging;
 
-namespace AMQPClient.Protocol;
+namespace AMQPClient;
 
 // FIXME: handle errors
 public class InternalConnection
@@ -20,6 +21,7 @@ public class InternalConnection
     private short _heartbeatInterval = 60;
     private long _lastFrameSent;
     private long _lastFrameReceived;
+    private SystemChannel _systemChannel;
     private ILogger<InternalConnection> Logger { get; } = DefaultLoggerFactory.CreateLogger<InternalConnection>();
 
     public InternalConnection(ConnectionParams @params)
@@ -31,11 +33,11 @@ public class InternalConnection
     {
         _amqpFrameStream = CreateStreamReader();
         await HandshakeAsync();
-        CreateChannel(DefaultChannelId);
+        _systemChannel = CreateSystemChannel();
         StartIncomingFramesListener();
         StartHeartbeatFrameListener();
     }
-
+    
     private void StartHeartbeatFrameListener(CancellationToken cancellationToken = default)
     {
         Task.Run(async () =>
@@ -155,11 +157,22 @@ public class InternalConnection
         return channel;
     }
 
+    private SystemChannel CreateSystemChannel()
+    {
+        var trxChannel = Channel.CreateUnbounded<object>();
+        var channel = new SystemChannel(trxChannel, _amqpFrameStream);
+        _channels.Add(channel.ChannelId, channel);
+        _channelWriters[channel.ChannelId] = trxChannel.Writer;
+        channel.StartListener();
+
+        return channel;
+    }
+
     private ChannelImpl CreateChannel(short? id = null)
     {
         var channelId = id ?? NextChannelId();
         var trxChannel = Channel.CreateUnbounded<object>();
-        var channel = new ChannelImpl(trxChannel, _amqpFrameStream, this, channelId);
+        var channel = new ChannelImpl(trxChannel, _amqpFrameStream, channelId);
         _channels.Add(channelId, channel);
         _channelWriters[channelId] = trxChannel.Writer;
 

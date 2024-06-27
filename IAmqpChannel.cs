@@ -1,6 +1,6 @@
 using AMQPClient.Protocol.Types;
 
-namespace AMQPClient.Protocol;
+namespace AMQPClient;
 
 public interface IAmqpChannel
 {
@@ -12,7 +12,6 @@ public interface IChannel
 {
     public Task ExchangeDeclare(string name, bool passive = false, bool durable = false, bool autoDelete = false,
         bool internalOnly = false, bool nowait = false);
-
     // Not supported by rabbit-mq according to https://www.rabbitmq.com/docs/specification#methods
     public Task Flow(bool active);
     public Task Close();
