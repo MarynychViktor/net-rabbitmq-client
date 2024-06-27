@@ -90,6 +90,42 @@ public class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSende
         await CallMethodAsync<QueueBindOk>(method);
     }
 
+    public async Task QueueUnbind(string queue, string exchange, string routingKey, Dictionary<string, object>? arguments = null)
+    {
+        var method = new QueueUnbind()
+        {
+            Queue = queue,
+            Exchange = exchange,
+            RoutingKey = routingKey,
+            Arguments = arguments ?? new(),
+        };
+        await CallMethodAsync<QueueUnbindOk>(method);
+    }
+
+    // TODO: add precondition errors handling
+    public async Task QueueDelete(string queue, bool ifUnused = false, bool ifEmpty = false, bool noWait = false)
+    {
+        var flags = QueueDeleteFlags.None;
+        if (ifUnused) flags |= QueueDeleteFlags.IfUnused;
+        if (ifEmpty) flags |= QueueDeleteFlags.IfEmpty;
+        if (noWait) flags |= QueueDeleteFlags.NoWait;
+
+        var method = new QueueDelete()
+        {
+            Queue = queue,
+            Flags = (byte)flags,
+        };
+
+        if (noWait)
+        {
+            await CallMethodAsync(method);
+        }
+        else
+        {
+            await CallMethodAsync<QueueDeleteOk>(method);
+        }
+    }
+
     public async Task<string> BasicConsume(string queue, Action<IMessage> consumer)
     {
         var method = new BasicConsume

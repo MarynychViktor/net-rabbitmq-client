@@ -62,11 +62,11 @@ Connection creation with basic set of options
 - [x] Implemented methods
     - Declare
     - Bind
+    - Unbind
+    - Delete
 
 - [ ] TODO:
-    - Unbind
     - Purge
-    - Delete
 
 **5. Basic** ❌
 
