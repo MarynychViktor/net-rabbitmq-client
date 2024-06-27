@@ -70,7 +70,7 @@ public class IncomingFrameListener
     {
         var methodFrame = (AmqpMethodFrame)_frame;
         var method = methodFrame.Method;
-        Logger.LogDebug("Received method frame {method}", method);
+        Logger.LogDebug("Received method frame:\n\t {method}", method);
 
         if (method.HasBody())
         {

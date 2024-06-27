@@ -1,12 +1,9 @@
-using System.Collections.Concurrent;
 using System.Threading.Channels;
 using AMQPClient.Protocol;
-using AMQPClient.Protocol.Methods;
 using AMQPClient.Protocol.Methods.Basic;
 using AMQPClient.Protocol.Methods.Channels;
 using AMQPClient.Protocol.Methods.Exchanges;
 using AMQPClient.Protocol.Methods.Queues;
-using AMQPClient.Protocol.Types;
 using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;
@@ -18,7 +15,7 @@ public class ChannelImpl(
     short id)
     : ChannelBase(frameSender, id), IChannel
 {
-    private readonly Dictionary<string, Action<AmqpEnvelope>> _consumersByTags = new();
+    private readonly Dictionary<string, Action<IMessage>> _consumersByTags = new();
     private ChannelReader<object> RxChannel => trxChannel.Reader;
     private ILogger<ChannelImpl> Logger { get; } = DefaultLoggerFactory.CreateLogger<ChannelImpl>();
     private CancellationTokenSource _listenerCancellationSource;
@@ -100,18 +97,20 @@ public class ChannelImpl(
     }
 
     // FIXME: add actual params to method
-    public async Task BasicConsume(string queue, Action<AmqpEnvelope> consumer)
+    public async Task BasicConsume(string queue, Action<IMessage> consumer)
     {
         var method = new BasicConsume
         {
             Queue = queue
         };
+
         var response = await CallMethodAsync<BasicConsumeOk>(method);
-        Console.WriteLine($"Registered consumer with tag{response.Tag}");
+        Logger.LogDebug("Registered consumer with tag: {tag}", response.Tag);
+
         _consumersByTags.Add(response.Tag, consumer);
     }
 
-    public async Task BasicPublishAsync(string exchange, string routingKey, Message message)
+    public async Task BasicPublishAsync(string exchange, string routingKey, IMessage message)
     {
         var method = new BasicPublish
         {
@@ -119,21 +118,21 @@ public class ChannelImpl(
             RoutingKey = routingKey
         };
 
-        await CallMethodAsync(method, message.Properties, message.Data);
+        await CallMethodAsync(method, message.Properties ?? new HeaderProperties(), message.Content);
     }
 
-    public async Task BasicAck(AmqpEnvelope message)
+    public async Task BasicAck(IMessage message)
     {
-        if (message.Method is BasicDeliver deliverMethod)
+        if (message.DeliveryTag is {} deliveryTag)
         {
             var method = new BasicAck
             {
-                Tag = deliverMethod.DeliverTag,
+                Tag = deliveryTag,
+                // TODO: add support for this param
                 Multiple = 0
             };
 
             await CallMethodAsync(method);
-
             return;
         }
 
@@ -167,7 +166,8 @@ public class ChannelImpl(
                     switch (nextFrame)
                     {
                         case AmqpMethodFrame frame:
-                            Logger.LogDebug("AmqpMethod frame received with type {type}", frame.Method);
+                            Logger.LogDebug("Frame received:\n\t {method}", frame.Method);
+
                             if (frame.Method.IsAsyncResponse())
                             {
                                 if (!SyncMethodHandles[ChannelId]
@@ -181,15 +181,19 @@ public class ChannelImpl(
                             if (frame.Method.HasBody())
                             {
                                 // TODO: remove envolope class
-                                var envelopePayload = new AmqpEnvelopePayload(
-                                    frame.Properties,
-                                    frame.Body
-                                );
+                                // var envelopePayload = new AmqpEnvelopePayload(
+                                //     frame.Properties,
+                                //     frame.Body
+                                // );
 
-                                var envelope = new AmqpEnvelope(frame.Method, envelopePayload);
-                                if (envelope.Method is BasicDeliver method)
+                                // var envelope = new AmqpEnvelope(frame.Method, envelopePayload);
+
+                                if (frame.Method is BasicDeliver method)
                                 {
-                                    _consumersByTags[method.ConsumerTag].Invoke(envelope);
+                                    var message2 = new IncomingMessage(frame.Body, frame.Properties, method.DeliverTag,
+                                        method.Redelivered == 1, method.Exchange, method.RoutingKey);
+
+                                    _consumersByTags[method.ConsumerTag].Invoke(message2);
                                     break;
                                 }
                             }

@@ -1,5 +1,3 @@
-using AMQPClient.Protocol.Types;
-
 namespace AMQPClient;
 
 public interface IAmqpChannel
@@ -18,16 +16,7 @@ public interface IChannel
     public Task ExchangeDelete(string name);
     public Task<string> QueueDeclare(string name = "");
     public Task QueueBind(string queue, string exchange, string routingKey);
-    public Task BasicConsume(string queue, Action<AmqpEnvelope> consumer);
-    public Task BasicPublishAsync(string exchange, string routingKey, Message message);
-    public Task BasicAck(AmqpEnvelope message);
+    public Task BasicConsume(string queue, Action<IMessage> consumer);
+    public Task BasicPublishAsync(string exchange, string routingKey, IMessage message);
+    public Task BasicAck(IMessage message);
 }
-
-public enum EventType
-{
-    MethodFrame,
-    HeaderFrame,
-    BodyFrame
-}
-
-public record InternalEvent<T>(EventType Type, T Event) where T : class;
