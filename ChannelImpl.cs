@@ -8,11 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;
 
-// Fixme: remove connection from channel
-public class ChannelImpl(
-    Channel<object> trxChannel,
-    IAmqpFrameSender frameSender,
-    short id)
+public class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSender, short id)
     : ChannelBase(frameSender, id), IChannel
 {
     private readonly Dictionary<string, Action<IMessage>> _consumersByTags = new();
@@ -72,7 +68,6 @@ public class ChannelImpl(
         await CallMethodAsync<ExchangeDeleteOk>(method);
     }
 
-    // FIXME: add actual params to method
     public async Task<string> QueueDeclare(string name = "")
     {
         var method = new QueueDeclare
@@ -84,7 +79,6 @@ public class ChannelImpl(
         return result.Name;
     }
 
-    // FIXME: add actual params to method
     public async Task QueueBind(string queue, string exchange, string routingKey)
     {
         var method = new QueueBind
@@ -96,7 +90,6 @@ public class ChannelImpl(
         await CallMethodAsync<QueueBindOk>(method);
     }
 
-    // FIXME: add actual params to method
     public async Task BasicConsume(string queue, Action<IMessage> consumer)
     {
         var method = new BasicConsume
@@ -178,27 +171,14 @@ public class ChannelImpl(
                                 break;
                             }
 
-                            if (frame.Method.HasBody())
-                            {
-                                // TODO: remove envolope class
-                                // var envelopePayload = new AmqpEnvelopePayload(
-                                //     frame.Properties,
-                                //     frame.Body
-                                // );
+                            if (!frame.Method.HasBody() || frame.Method is not BasicDeliver method)
+                                throw new NotImplementedException();
 
-                                // var envelope = new AmqpEnvelope(frame.Method, envelopePayload);
+                            var message2 = new IncomingMessage(frame.Body, frame.Properties, method.DeliverTag,
+                                method.Redelivered == 1, method.Exchange, method.RoutingKey);
+                            _consumersByTags[method.ConsumerTag].Invoke(message2);
+                            break;
 
-                                if (frame.Method is BasicDeliver method)
-                                {
-                                    var message2 = new IncomingMessage(frame.Body, frame.Properties, method.DeliverTag,
-                                        method.Redelivered == 1, method.Exchange, method.RoutingKey);
-
-                                    _consumersByTags[method.ConsumerTag].Invoke(message2);
-                                    break;
-                                }
-                            }
-
-                            throw new NotImplementedException();
                         default:
                             throw new Exception("Unknown frame");
                     }
