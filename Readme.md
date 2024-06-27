@@ -5,7 +5,7 @@ Main goal of this project is to create basic implementation of amqp-0-9-1 protoc
 purposes
 
 ### Usage example
-**1. Connection**
+**1. Connection** ✅
 
 Connection creation with basic set of options 
 > TODO: add support for auth mechanism selection, TLS, advanced connections options
@@ -22,7 +22,7 @@ var connection = await connectionFactory.CreateConnectionAsync(options =>
 
 //....
 ```
-**2. Channel**
+**2. Channel** ✅
 ```c#
 //....
 var channel = await connection.CreateChannelAsync();
@@ -32,6 +32,16 @@ var channel = await connection.CreateChannelAsync();
 await channel.Close();
 ```
 **3. Exchange and Queue**
+  1. **Exchange** ✅
+  2. **Queue** ❌
+  - [x] Implemented methods
+    - Declare
+    - Bind
+
+  - [ ] TODO:
+    - Unbind
+    - Purge
+    - Delete
 ```c#
 //....
 var exchangeName = "foo-exchange";
@@ -44,8 +54,21 @@ await channel.ExchangeDeclare(exchangeName);
 await channel.QueueBind(queueName, exchangeName, routingKey);
 //....
 ```
-**4. Basic**
-> TODO: add support for other basic methods
+**4. Basic** ❌
+- [x] Implemented methods
+  - Consume
+  - Publish
+  - Deliver
+  - Ack
+  - Reject
+
+
+- [ ] TODO:
+  - Qos
+  - Nack
+  - Return
+  - Recover
+
 ```c#
 //...
 await channel.BasicConsume(queueName, async (message) =>
@@ -56,13 +79,17 @@ await channel.BasicConsume(queueName, async (message) =>
 
 await channel.BasicPublishAsync(exchangeName, routingKey, new Message("Hello from app!"u8.ToArray()));
 ```
+**5. Tx** ❌
+
+Not implemented
+
 
 ### Roadmap
 
 - [x] Handshake with AMQP server
-- [ ] Connection: implemented methods - Open, Start, Tune, Close, todo: ...
-- [x] Channel: Open, Close, Flow
-- [ ] Queue: implemented methods - Declare, Bind, todo: ...
-- [x] Exchange: implemented methods - Declare, Delete
-- [ ] Basic: implemented methods - Publish, Consume, Ack, todo: ...
+- [ ] Connection
+- [x] Channel
+- [ ] Queue
+- [x] Exchange
+- [ ] Basic
 
