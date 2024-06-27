@@ -6,8 +6,7 @@ namespace AMQPClient;
 public abstract class ChannelBase
 {
     private readonly IAmqpFrameSender _frameSender;
-    protected readonly Dictionary<short, ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>> SyncMethodHandles =
-        new();
+    protected readonly ConcurrentQueue<TaskCompletionSource<MethodResult>> SyncMethodHandles = new();
     protected bool IsClosed { get; set; }
 
     public ChannelBase(IAmqpFrameSender frameSender, short id)
@@ -21,18 +20,17 @@ public abstract class ChannelBase
     protected async Task<TResponse> CallMethodAsync<TResponse>(Method method, bool checkForClosed = true)
         where TResponse : Method, new()
     {
-        var taskSource = new TaskCompletionSource<AmqpMethodFrame>(TaskCreationOptions.RunContinuationsAsynchronously);
+        var taskSource = new TaskCompletionSource<MethodResult>(TaskCreationOptions.RunContinuationsAsynchronously);
         await CallMethodAsync(method, checkForClosed);
+        SyncMethodHandles.Enqueue(taskSource);
 
-        if (!SyncMethodHandles.TryGetValue(ChannelId, out var sourcesQueue))
+        var result = await taskSource.Task;
+        if (result.IsOk())
         {
-            sourcesQueue = new ConcurrentQueue<TaskCompletionSource<AmqpMethodFrame>>();
-            SyncMethodHandles[ChannelId] = sourcesQueue;
+            return (TResponse)result.Method!;
         }
 
-        sourcesQueue.Enqueue(taskSource);
-
-        return (TResponse)(await taskSource.Task).Method;
+        throw new Exception($"Method call failed with {result.ErrorCode} {result.ErrorMessage}");
     }
 
     protected Task CallMethodAsync(Method method, bool checkForClosed = true)

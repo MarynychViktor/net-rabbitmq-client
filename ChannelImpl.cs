@@ -239,22 +239,35 @@ public class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSende
 
                             if (frame.Method.IsAsyncResponse())
                             {
-                                if (!SyncMethodHandles[ChannelId]
-                                        .TryDequeue(out var result))
+                                if (!SyncMethodHandles.TryDequeue(out var result))
                                     throw new Exception("No task completion source found");
 
-                                result.SetResult(frame);
+                                result.SetResult(new MethodResult(frame.Method));
                                 break;
                             }
 
-                            if (!frame.Method.HasBody() || frame.Method is not BasicDeliver method)
-                                throw new NotImplementedException();
+                            if (frame.Method.HasBody() && frame.Method is BasicDeliver method)
+                            {
+                                var message2 = new IncomingMessage(frame.Body, frame.Properties, method.DeliverTag,
+                                    method.Redelivered == 1, method.Exchange, method.RoutingKey);
+                                _consumersByTags[method.ConsumerTag].Invoke(message2);
+                                break;
+                            }
 
-                            var message2 = new IncomingMessage(frame.Body, frame.Properties, method.DeliverTag,
-                                method.Redelivered == 1, method.Exchange, method.RoutingKey);
-                            _consumersByTags[method.ConsumerTag].Invoke(message2);
+                            switch (frame.Method)
+                            {
+                                case ChannelCloseMethod closeMethod:
+                                    Logger.LogError("Closing channel\n {code}, {text} ", closeMethod.ReplyCode, closeMethod.ReplyText);
+                                    if (SyncMethodHandles.TryDequeue(out var result))
+                                    {
+                                        result.SetResult(new MethodResult(null, closeMethod.ReplyCode, closeMethod.ReplyText));
+                                    }
+                                    await CallMethodAsync(new ChannelCloseOkMethod());
+                                    break;
+                                default:
+                                    throw new NotImplementedException();
+                            }
                             break;
-
                         default:
                             throw new Exception("Unknown frame");
                     }

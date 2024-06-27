@@ -44,11 +44,10 @@ public class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameSen
                         case AmqpMethodFrame frame:
                             if (frame.Method.IsAsyncResponse())
                             {
-                                if (!SyncMethodHandles[ChannelId]
-                                        .TryDequeue(out var result))
+                                if (!SyncMethodHandles.TryDequeue(out var result))
                                     throw new Exception("No task completion source found");
 
-                                result.SetResult(frame);
+                                result.SetResult(new MethodResult(frame.Method));
                                 break;
                             }
 
