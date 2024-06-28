@@ -58,15 +58,7 @@ Connection creation with basic set of options
 
 **3. Exchange** ✅
 
-**4. Queue** ❌
-- [x] Implemented methods
-    - Declare
-    - Bind
-    - Unbind
-    - Delete
-
-- [ ] TODO:
-    - Purge
+**4. Queue** ✅
 
 **5. Basic** ❌
 
@@ -78,15 +70,12 @@ Some advanced methods not implemented
   - Ack
   - Reject
 
-
 - [ ] TODO:
   - Qos
   - Nack
   - Return
   - Recover
 
-**6. Tx** ❌
-
-Not implemented
+**6. Tx** - Not implemented
 
 

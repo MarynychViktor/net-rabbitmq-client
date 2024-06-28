@@ -103,6 +103,17 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         await CallMethodAsync<QueueUnbindOk>(method);
     }
 
+    public async Task QueuePurge(string queue, bool noWait = false)
+    {
+        var method = new QueuePurge()
+        {
+            Queue = queue,
+            NoWait = (byte)(noWait ? 1 : 0)
+        };
+
+        await CallMethodAsync<QueuePurgeOk>(method);
+    }
+
     // TODO: add precondition errors handling
     public async Task QueueDelete(string queue, bool ifUnused = false, bool ifEmpty = false, bool noWait = false)
     {

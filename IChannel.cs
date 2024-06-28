@@ -11,6 +11,7 @@ public interface IChannel
     public Task<string> QueueDeclare(string name = "");
     public Task QueueBind(string queue, string exchange, string routingKey);
     public Task QueueUnbind(string queue, string exchange, string routingKey, Dictionary<string, object>? arguments = null);
+    public Task QueuePurge(string queue, bool noWait = false);
     public Task QueueDelete(string queue, bool ifUnused = false, bool ifEmpty = false, bool noWait = false);
     public Task<string> BasicConsume(string queue, Action<IMessage> consumer);
     public Task BasicCancel(string consumerTag, bool noWait = false);
