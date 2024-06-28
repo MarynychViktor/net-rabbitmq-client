@@ -41,8 +41,8 @@ await channel.BasicPublishAsync(exchangeName, routingKey, new Message("Hello fro
 ```c#
 await channel.BasicConsume(queueName, async (message) =>
 {
-Console.WriteLine($"Received message {Encoding.Default.GetString(message.Payload.Content)}");
-await channel.BasicAck(message);
+  Console.WriteLine($"Received message {Encoding.Default.GetString(message.Payload.Content)}");
+  await channel.BasicAck(message);
 });
 ```
 
