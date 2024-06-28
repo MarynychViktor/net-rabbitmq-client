@@ -23,6 +23,7 @@ public class InternalConnection
     private CancellationTokenSource _listenersCancellationSource;
     internal SystemChannel SystemChannel { get; set; }
     private ILogger<InternalConnection> Logger { get; } = DefaultLoggerFactory.CreateLogger<InternalConnection>();
+    internal event Func<Task> OnConnectionClosed;
 
     public InternalConnection(ConnectionParams @params)
     {
@@ -44,6 +45,7 @@ public class InternalConnection
         await _listenersCancellationSource.CancelAsync();
         await _amqpFrameStream.DisposeAsync();
         _amqpFrameStream = null;
+        await OnConnectionClosed();
     }
 
     private void StartHeartbeatFrameListener(CancellationToken cancellationToken = default)
@@ -170,6 +172,7 @@ public class InternalConnection
     {
         var trxChannel = Channel.CreateUnbounded<object>();
         var channel = new SystemChannel(trxChannel, _amqpFrameStream, this);
+        OnConnectionClosed += channel.HandleConnectionClosed;
         _channelWriters[channel.ChannelId] = trxChannel.Writer;
         channel.StartListener();
 
@@ -181,6 +184,7 @@ public class InternalConnection
         var channelId = id ?? NextChannelId();
         var trxChannel = Channel.CreateUnbounded<object>();
         var channel = new ChannelImpl(trxChannel, _amqpFrameStream, channelId);
+        OnConnectionClosed += channel.HandleConnectionClosed;
         _channelWriters[channelId] = trxChannel.Writer;
 
         return channel;

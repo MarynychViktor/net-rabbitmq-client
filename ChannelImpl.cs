@@ -47,6 +47,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         {
             Active = (byte)(active ? 1 : 0)
         };
+
         await CallMethodAsync<ChannelFlowOkMethod>(method);
     }
 

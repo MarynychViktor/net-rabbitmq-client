@@ -20,7 +20,13 @@ internal abstract class ChannelBase
     }
 
     public short ChannelId { get; }
-    
+
+    public Task HandleConnectionClosed()
+    {
+        State = ChannelState.Closed;
+        return Task.CompletedTask;
+    }
+
     protected async Task<TResponse> CallMethodAsync<TResponse>(Method method, bool checkForClosed = true)
         where TResponse : Method, new()
     {
