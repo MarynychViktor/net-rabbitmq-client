@@ -8,7 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;
 
-public class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSender, short id)
+internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSender, short id)
     : ChannelBase(frameSender, id), IChannel
 {
     private readonly Dictionary<string, Action<IMessage>> _consumersByTags = new();
@@ -53,7 +53,7 @@ public class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSende
     public async Task Close()
     {
         var method = new ChannelCloseMethod();
-        IsClosed = true;
+        State = ChannelState.Closed;
         await CallMethodAsync<ChannelCloseOkMethod>(method, checkForClosed: false);
         await _listenerCancellationSource.CancelAsync();
     }
@@ -258,11 +258,16 @@ public class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSende
                             {
                                 case ChannelCloseMethod closeMethod:
                                     Logger.LogError("Closing channel\n {code}, {text} ", closeMethod.ReplyCode, closeMethod.ReplyText);
-                                    if (SyncMethodHandles.TryDequeue(out var result))
+                                    var result = new MethodResult(null, closeMethod.ReplyCode, closeMethod.ReplyText);
+
+                                    if (SyncMethodHandles.TryDequeue(out var source))
                                     {
-                                        result.SetResult(new MethodResult(null, closeMethod.ReplyCode, closeMethod.ReplyText));
+                                        source.SetResult(result);
                                     }
+
                                     await CallMethodAsync(new ChannelCloseOkMethod());
+                                    LastErrorResult = result;
+                                    State = ChannelState.Failed;
                                     break;
                                 default:
                                     throw new NotImplementedException();

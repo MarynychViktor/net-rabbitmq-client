@@ -3,11 +3,15 @@ using AMQPClient.Protocol;
 using AMQPClient.Protocol.Methods;
 namespace AMQPClient;
 
-public abstract class ChannelBase
+internal abstract class ChannelBase
 {
     private readonly IAmqpFrameSender _frameSender;
     protected readonly ConcurrentQueue<TaskCompletionSource<MethodResult>> SyncMethodHandles = new();
-    protected bool IsClosed { get; set; }
+    protected ChannelState State { get; set; }
+    protected MethodResult? LastErrorResult { get; set; }
+    protected bool IsOpen => State == ChannelState.Open;
+    protected bool IsClosed => State == ChannelState.Closed;
+    protected bool IsFailed => State == ChannelState.Failed;
 
     public ChannelBase(IAmqpFrameSender frameSender, short id)
     {
@@ -37,7 +41,12 @@ public abstract class ChannelBase
     {
         if (checkForClosed && IsClosed)
         {
-            throw new Exception("Unable to call method on closed channel");
+            throw new ResourceClosedException();
+        }
+
+        if (IsFailed)
+        {
+            throw new ResourceClosedException(LastErrorResult!.ErrorCode, LastErrorResult.ErrorMessage);
         }
 
         var bytes = Encoder.MarshalMethodFrame(method);
@@ -54,4 +63,11 @@ public abstract class ChannelBase
         var bodyFrame = new AmqpBodyFrame(ChannelId, body ?? []);
         await _frameSender.SendFrameAsync(bodyFrame);
     }
+}
+
+internal enum ChannelState
+{
+    Open,
+    Closed,
+    Failed
 }

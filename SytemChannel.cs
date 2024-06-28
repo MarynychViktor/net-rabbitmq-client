@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;
 
-public class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameSender, InternalConnection connection)
+internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameSender, InternalConnection connection)
     : ChannelBase(frameSender, 0)
 {
     private ChannelReader<object> RxChannel => trxChannel.Reader;
@@ -55,11 +55,15 @@ public class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameSen
                             {
                                 case ConnectionClose closeMethod:
                                     Logger.LogCritical("Closing connection\n {code}, {text} ", closeMethod.ReplyCode, closeMethod.ReplyText);
-                                    if (SyncMethodHandles.TryDequeue(out var result))
+                                    var result = new MethodResult(null, closeMethod.ReplyCode, closeMethod.ReplyText);
+                                    
+                                    if (SyncMethodHandles.TryDequeue(out var source))
                                     {
-                                        result.SetResult(new MethodResult(null, closeMethod.ReplyCode, closeMethod.ReplyText));
+                                        source.SetResult(result);
                                     }
 
+                                    LastErrorResult = result;
+                                    State = ChannelState.Failed;
                                     await CallMethodAsync(new ConnectionCloseOk());
                                     await connection.CloseAsync();
                                     break;
