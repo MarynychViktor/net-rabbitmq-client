@@ -1,8 +1,5 @@
-## Rabbitmq client
-#### AMQP 0-9-1 protocol
-
-Main goal of this project is to create basic implementation of amqp-0-9-1 protocol (aka rabbitmq client) for learning
-purposes
+## RabbitMQ client
+The client was built around AMQP 0-9-1 protocol and provides all necessary methods to work with the RabbitMQ server.
 
 ### Usage example
 #### Create connection
@@ -49,7 +46,7 @@ await channel.BasicAck(message);
 });
 ```
 
-### Roadmap
+### Implemented features
 **1. Connection** ✅
 Connection creation with basic set of options 
 > TODO: add support for auth mechanism selection, TLS, advanced connections options
