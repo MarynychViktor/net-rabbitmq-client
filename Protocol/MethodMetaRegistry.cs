@@ -42,7 +42,9 @@ public static class MethodMetaRegistry
         { 6030, typeof(BasicCancel) },
         { 6031, typeof(BasicCancelOk) },
         { 6040, typeof(BasicPublish) },
-        { 6060, typeof(BasicDeliver) }
+        { 6060, typeof(BasicDeliver) },
+        { 6110, typeof(BasicRecover) },
+        { 6111, typeof(BasicRecoverOk) }
     };
 
     private static readonly IReadOnlyList<Type> ResponseMethods = new List<Type>
@@ -57,7 +59,8 @@ public static class MethodMetaRegistry
         typeof(BasicCancelOk),
         typeof(QueueUnbindOk),
         typeof(QueueDeleteOk),
-        typeof(QueuePurgeOk)
+        typeof(QueuePurgeOk),
+        typeof(BasicRecoverOk),
     };
 
     private static readonly IReadOnlyList<Type> MethodsWithBody = new List<Type>
@@ -79,18 +82,5 @@ public static class MethodMetaRegistry
     public static Type GetMethodType(short classId, short methodId)
     {
         return _methodIdTypeMap[(short)(classId * 100 + methodId)];
-    }
-
-    public static (short, short) GetMethodId(Type methodType)
-    {
-        foreach (var keyValuePair in _methodIdTypeMap)
-            if (keyValuePair.Value == methodType)
-            {
-                var classId = (short)(keyValuePair.Key % 1000);
-                var methodId = (short)(keyValuePair.Key / 100);
-                return (classId, methodId);
-            }
-
-        throw new ArgumentOutOfRangeException($"Invalid method type provided {methodType}");
     }
 }

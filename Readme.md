@@ -66,12 +66,12 @@ Some advanced methods not implemented
   - Deliver
   - Ack
   - Reject
+  - Recover
 
 - [ ] TODO:
   - Qos
   - Nack
   - Return
-  - Recover
 
 **6. Tx** - Not implemented
 

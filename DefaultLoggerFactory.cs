@@ -9,8 +9,8 @@ public class DefaultLoggerFactory
         using var factory = LoggerFactory.Create(builder =>
         {
             builder.SetMinimumLevel(LogLevel.Debug);
-            builder.AddFilter("AMQPClient", LogLevel.Debug);
-            builder.AddFilter(typeof(SystemChannel).FullName, LogLevel.Debug);
+            builder.AddFilter("AMQPClient", LogLevel.Information);
+            // builder.AddFilter(typeof(SystemChannel).FullName, LogLevel.Debug);
             builder.AddConsole();
         });
         return factory.CreateLogger<T>();

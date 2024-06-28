@@ -220,6 +220,17 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         throw new NotImplementedException();
     }
 
+    public async Task BasicRecover()
+    {
+        // Recovery with requeue=false is not supported.
+        // https://www.rabbitmq.com/docs/specification
+        var method = new BasicRecover()
+        {
+            Requeue = 1
+        };
+        await CallMethodAsync<BasicRecoverOk>(method);
+    }
+
     internal async Task OpenAsync(short channelId)
     {
         _listenerCancellationSource = new CancellationTokenSource();
