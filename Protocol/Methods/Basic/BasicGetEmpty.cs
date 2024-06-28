@@ -7,4 +7,6 @@ public class BasicGetEmpty: Method
 {    
     [ShortStringField(0)]
     public string Reserved1 { get; set; }
+    
+    public override bool IsAsyncResponse() => true;
 }

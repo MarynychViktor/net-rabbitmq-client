@@ -7,4 +7,6 @@ public class BasicCancelOk : Method
 {
     [ShortStringField(0)]
     public string ConsumerTag { get; set; }
+
+    public override bool IsAsyncResponse() => true;
 }

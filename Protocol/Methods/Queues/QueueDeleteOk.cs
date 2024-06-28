@@ -6,4 +6,6 @@ namespace AMQPClient.Protocol.Methods.Queues;
 public class QueueDeleteOk : Method
 {
     [IntField(0)] public int MessageCount { get; set; }
+    
+    public override bool IsAsyncResponse() => true;
 }

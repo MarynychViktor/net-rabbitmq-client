@@ -19,4 +19,6 @@ public class BasicDeliver : Method
 
     [ShortStringField(4)]
     public string RoutingKey { get; set; }
+    
+    public override bool HasBody() => true;
 }

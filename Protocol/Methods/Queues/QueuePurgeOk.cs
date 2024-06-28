@@ -7,4 +7,6 @@ public class QueuePurgeOk : Method
 {
     [IntField(0)]
     public int MessageCount { get; set; }
+    
+    public override bool IsAsyncResponse() => true;
 }

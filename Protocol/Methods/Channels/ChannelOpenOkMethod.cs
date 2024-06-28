@@ -6,4 +6,6 @@ namespace AMQPClient.Protocol.Methods.Channels;
 public class ChannelOpenOkMethod : Method
 {
     [ShortStringField(0)] private string Reserved1 { get; set; } = "";
+
+    public override bool IsAsyncResponse() => true;
 }

@@ -20,4 +20,7 @@ public class BasicGetOk: Method
 
     [IntField(4)]
     public int MessageCount { get; set; }
+    
+    public override bool IsAsyncResponse() => true;
+    public override bool HasBody() => true;
 }

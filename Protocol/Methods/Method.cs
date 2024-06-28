@@ -9,15 +9,9 @@ public class Method
     public short ClassId => ((MethodDefAttribute)GetType().GetCustomAttribute(typeof(MethodDefAttribute))!).ClassId;
     public short MethodId => ((MethodDefAttribute)GetType().GetCustomAttribute(typeof(MethodDefAttribute))!).MethodId;
 
-    public bool IsAsyncResponse()
-    {
-        return MethodMetaRegistry.IsAsyncResponse(ClassId, MethodId);
-    }
+    public virtual bool IsAsyncResponse() => false;
 
-    public bool HasBody()
-    {
-        return MethodMetaRegistry.HasBody(ClassId, MethodId);
-    }
+    public virtual bool HasBody() => false;
 
     public override string ToString()
     {

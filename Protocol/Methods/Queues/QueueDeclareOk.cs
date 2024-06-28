@@ -10,4 +10,6 @@ public class QueueDeclareOk : Method
     [IntField(1)] public int MsgCount { get; set; }
 
     [IntField(2)] public int ConsumersCount { get; set; }
+
+    public override bool IsAsyncResponse() => true;
 }

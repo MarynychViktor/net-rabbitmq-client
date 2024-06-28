@@ -16,4 +16,6 @@ public class BasicPublish : Method
 
     [ByteField(3)]
     public byte Flags { get; set; }
+    
+    public override bool HasBody() => true;
 }
