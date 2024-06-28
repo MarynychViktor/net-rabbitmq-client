@@ -139,7 +139,7 @@ public class InternalConnection
     public async Task<IChannel> OpenChannelAsync()
     {
         var channel = CreateChannel();
-        await channel.OpenAsync(channel.ChannelId);
+        await channel.OpenAsync();
         return channel;
     }
 

@@ -1,6 +1,5 @@
 using System.Threading.Channels;
 using AMQPClient.Protocol;
-using AMQPClient.Protocol.Methods;
 using AMQPClient.Protocol.Methods.Basic;
 using AMQPClient.Protocol.Methods.Channels;
 using AMQPClient.Protocol.Methods.Exchanges;
@@ -267,7 +266,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         throw new Exception($"Unexpected result {result}");
     }
 
-    internal async Task OpenAsync(short channelId)
+    internal async Task OpenAsync()
     {
         _listenerCancellationSource = new CancellationTokenSource();
         StartListener(_listenerCancellationSource.Token);
@@ -295,42 +294,9 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
                     {
                         case AmqpMethodFrame frame:
                             Logger.LogDebug("Frame received:\n\t {method}", frame.Method);
+                            if (TryHandleAsyncResponse(frame)) break;
 
-                            if (frame.Method.IsAsyncResponse())
-                            {
-                                if (!SyncMethodHandles.TryDequeue(out var result))
-                                    throw new Exception("No task completion source found");
-
-                                result.SetResult(new MethodResult(frame));
-                                break;
-                            }
-
-                            if (frame.Method.HasBody() && frame.Method is BasicDeliver method)
-                            {
-                                var message2 = new IncomingMessage(frame.Body, frame.Properties, method.DeliverTag,
-                                    method.Redelivered == 1, method.Exchange, method.RoutingKey);
-                                _consumersByTags[method.ConsumerTag].Invoke(message2);
-                                break;
-                            }
-
-                            switch (frame.Method)
-                            {
-                                case ChannelCloseMethod closeMethod:
-                                    Logger.LogError("Closing channel\n {code}, {text} ", closeMethod.ReplyCode, closeMethod.ReplyText);
-                                    var result = new MethodResult(null, closeMethod.ReplyCode, closeMethod.ReplyText);
-
-                                    if (SyncMethodHandles.TryDequeue(out var source))
-                                    {
-                                        source.SetResult(result);
-                                    }
-
-                                    await CallMethodAsync(new ChannelCloseOkMethod());
-                                    LastErrorResult = result;
-                                    State = ChannelState.Failed;
-                                    break;
-                                default:
-                                    throw new NotImplementedException();
-                            }
+                            await HandleIncomingMessage(frame);
                             break;
                         default:
                             throw new Exception("Unknown frame");
@@ -345,5 +311,50 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
             }
             return Task.CompletedTask;
         }, cancellationToken);
+    }
+
+    private bool TryHandleAsyncResponse(AmqpMethodFrame frame)
+    {
+        if (!frame.Method.IsAsyncResponse()) return false;
+
+        if (!SyncMethodHandles.TryDequeue(out var result))
+            throw new Exception("No task completion source found");
+
+        result.SetResult(new MethodResult(frame));
+        return true;
+    }
+
+    private async Task HandleIncomingMessage(AmqpMethodFrame frame)
+    {
+        if (TryHandleConsumerMessage(frame)) return;
+
+        switch (frame.Method)
+        {
+            case ChannelCloseMethod closeMethod:
+                Logger.LogError("Closing channel\n {code}, {text} ", closeMethod.ReplyCode, closeMethod.ReplyText);
+
+                var result = new MethodResult(null, closeMethod.ReplyCode, closeMethod.ReplyText);
+
+                if (SyncMethodHandles.TryDequeue(out var source))
+                {
+                    source.SetResult(result);
+                }
+
+                await CallMethodAsync(new ChannelCloseOkMethod());
+                LastErrorResult = result;
+                State = ChannelState.Failed;
+                break;
+            default:
+                throw new NotImplementedException();
+        }
+    }
+    
+    private bool TryHandleConsumerMessage(AmqpMethodFrame frame)
+    {
+        if (!frame.Method.HasBody() || frame.Method is not BasicDeliver method) return false;
+
+        var message2 = new IncomingMessage(frame.Body, frame.Properties, method.DeliverTag, method.Redelivered == 1, method.Exchange, method.RoutingKey);
+        _consumersByTags[method.ConsumerTag].Invoke(message2);
+        return true;
     }
 }
