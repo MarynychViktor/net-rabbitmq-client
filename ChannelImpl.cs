@@ -231,6 +231,20 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         await CallMethodAsync<BasicRecoverOk>(method);
     }
 
+    public async Task BasicQos(short prefetchCount, bool global = false)
+    {
+        var method = new BasicQos()
+        {
+            // Not implemented in rabbitmq
+            // https://www.rabbitmq.com/amqp-0-9-1-reference#domain.short
+            PrefetchSize = 0,
+            PrefetchCount = prefetchCount,
+            Global = (byte)(global ? 1 : 0)
+        };
+
+        await CallMethodAsync<BasicQosOk>(method);
+    }
+
     internal async Task OpenAsync(short channelId)
     {
         _listenerCancellationSource = new CancellationTokenSource();

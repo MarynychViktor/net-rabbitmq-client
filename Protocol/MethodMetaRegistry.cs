@@ -37,6 +37,8 @@ public static class MethodMetaRegistry
         { 5050, typeof(QueueUnbind) },
         { 5051, typeof(QueueUnbindOk) },
         // Basic
+        { 6010, typeof(BasicQos) },
+        { 6011, typeof(BasicQosOk) },
         { 6020, typeof(BasicConsume) },
         { 6021, typeof(BasicConsumeOk) },
         { 6030, typeof(BasicCancel) },
@@ -61,6 +63,7 @@ public static class MethodMetaRegistry
         typeof(QueueDeleteOk),
         typeof(QueuePurgeOk),
         typeof(BasicRecoverOk),
+        typeof(BasicQosOk),
     };
 
     private static readonly IReadOnlyList<Type> MethodsWithBody = new List<Type>
