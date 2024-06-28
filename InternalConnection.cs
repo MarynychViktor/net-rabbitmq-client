@@ -12,30 +12,37 @@ namespace AMQPClient;
 // FIXME: stop all channels on connection close
 public class InternalConnection
 {
-    private const short DefaultChannelId = 0;
-    private readonly ConcurrentDictionary<short, ChannelWriter<object>> _channelWriters = new();
     private readonly ConnectionParams _params;
-    private AmqpFrameStream _amqpFrameStream;
-    private int _channelId;
-    private short _heartbeatInterval = 60;
-    private long _lastFrameSent;
-    private long _lastFrameReceived;
+    private AmqpFrameStream? _amqpFrameStream;
     private CancellationTokenSource _listenersCancellationSource;
+    private readonly ChannelIdGenerator _channelIdGenerator;
+    private PingPongWatcher? _pingPongService;
+    private readonly ILogger<InternalConnection> _logger = DefaultLoggerFactory.CreateLogger<InternalConnection>();
+
+    private readonly ConcurrentDictionary<short, ChannelWriter<object>> _channelWriters = new();
     internal SystemChannel SystemChannel { get; set; }
-    private ILogger<InternalConnection> Logger { get; } = DefaultLoggerFactory.CreateLogger<InternalConnection>();
     internal event Func<Task> OnConnectionClosed;
 
     public InternalConnection(ConnectionParams @params)
     {
         _params = @params;
+        _channelIdGenerator = new ChannelIdGenerator();
     }
     
     public async Task StartAsync()
     {
         _amqpFrameStream = CreateStreamReader();
+        _pingPongService = new PingPongWatcher(_amqpFrameStream!);
+        _pingPongService.HeartbeatInterval = _params.HeartbeatInterval;
         await HandshakeAsync();
         SystemChannel = CreateSystemChannel();
+        StartConnectionListeners();
+    }
+
+    private void StartConnectionListeners()
+    {
         _listenersCancellationSource = new CancellationTokenSource();
+
         StartIncomingFramesListener(_listenersCancellationSource.Token);
         StartHeartbeatFrameListener(_listenersCancellationSource.Token);
     }
@@ -43,82 +50,52 @@ public class InternalConnection
     public async Task CloseAsync()
     {
         await _listenersCancellationSource.CancelAsync();
-        await _amqpFrameStream.DisposeAsync();
+        await _amqpFrameStream!.DisposeAsync();
         _amqpFrameStream = null;
         await OnConnectionClosed();
     }
 
     private void StartHeartbeatFrameListener(CancellationToken cancellationToken = default)
     {
-        Task.Run(async () =>
-        {
-            while (true)
-            {
-                if (cancellationToken.IsCancellationRequested)
-                {
-                    break;
-                }
-
-                var frequency = _heartbeatInterval / 2;
-                var lastSent = DateTimeOffset.Now.ToUnixTimeSeconds() - _lastFrameSent;
-                var secondsToNextFrame = Math.Min(frequency - lastSent, frequency);
-
-                if (secondsToNextFrame <= 0)
-                {
-                    Logger.LogDebug("***Heartbeat frame sent***");
-                    var heartbeatFrame = new byte[] { 8, 0, 0, 0, 0, 0, 0, 0xCE };
-                    await _amqpFrameStream.SendRawAsync(heartbeatFrame);
-                    await Task.Delay(TimeSpan.FromSeconds(frequency), cancellationToken);
-                    continue;
-                }
-
-
-                await Task.Delay(TimeSpan.FromSeconds(secondsToNextFrame), cancellationToken);
-            }
-        }, cancellationToken);
+        Task.Run(async () => await _pingPongService!.StartAsync(cancellationToken), cancellationToken);
     }
 
     private AmqpFrameStream CreateStreamReader()
     {
         var tcpClient = new TcpClient(_params.Host, _params.Port);
         var reader = new AmqpFrameStream(tcpClient.GetStream());
-        reader.FrameSent += () =>
-        {
-            Interlocked.Exchange(ref _lastFrameSent, DateTimeOffset.Now.ToUnixTimeSeconds());
-        };
-        reader.FrameReceived += () =>
-        {
-            Interlocked.Exchange(ref _lastFrameReceived, DateTimeOffset.Now.ToUnixTimeSeconds());
-        };
+
+        reader.FrameSent += () => _pingPongService!.LastFrameSent = DateTimeOffset.Now.ToUnixTimeSeconds();
+        reader.FrameReceived += () => _pingPongService!.LastFrameReceived = DateTimeOffset.Now.ToUnixTimeSeconds();
 
         return reader;
     }
 
-    public async Task HandshakeAsync()
+    private async Task HandshakeAsync()
     {
         async Task<AmqpMethodFrame> ReadNextMethodFrame()
         {
-            var nextFrame = await _amqpFrameStream.ReadFrameAsync();
+            var nextFrame = await _amqpFrameStream!.ReadFrameAsync();
 
-            // Healthcheck frame check
-            if (nextFrame.Type == FrameType.Method) return (AmqpMethodFrame)nextFrame;
+            // Skip healthcheck frame
+            if (nextFrame!.Type != FrameType.Method) return (AmqpMethodFrame)(await _amqpFrameStream!.ReadFrameAsync())!;
 
-            return (AmqpMethodFrame)await _amqpFrameStream.ReadFrameAsync();
+            return (AmqpMethodFrame)nextFrame;
         }
 
         async Task WriteMethodFrameAsync(Method method)
         {
             var bytes = Encoder.MarshalMethodFrame(method);
-            await _amqpFrameStream.SendFrameAsync(new AmqpFrame(DefaultChannelId, bytes, FrameType.Method));
+            await _amqpFrameStream.SendFrameAsync(new AmqpFrame(0, bytes, FrameType.Method));
         }
-        Logger.LogDebug("Handshake started");
+        _logger.LogDebug("Handshake started");
 
         var protocolHeader = "AMQP"u8.ToArray().Concat(new byte[] { 0, 0, 9, 1 }).ToArray();
-        await _amqpFrameStream.SendRawAsync(protocolHeader);
+        await _amqpFrameStream!.SendRawAsync(protocolHeader);
 
-        var nextFrame = await ReadNextMethodFrame();
-        // TODO: Do something
-        var _startMethod = (StartMethod)nextFrame.Method;
+        // Skip start method
+        // TODO: Do we need to handle start method?
+        await ReadNextMethodFrame();
 
         // FIXME: review with dynamic params
         var startOkMethod = new StartOkMethod
@@ -136,14 +113,14 @@ public class InternalConnection
         };
         await WriteMethodFrameAsync(startOkMethod);
 
-        nextFrame = await ReadNextMethodFrame();
+        var nextFrame = await ReadNextMethodFrame();
         var tuneMethod = (TuneMethod)nextFrame.Method;
-        _heartbeatInterval = tuneMethod.Heartbeat;
 
+        // TODO: dynamic values for channelMax and frameMax
         var tuneOkMethod = new TuneOkMethod
         {
             ChannelMax = tuneMethod.ChannelMax,
-            Heartbeat = tuneMethod.Heartbeat,
+            Heartbeat = _params.HeartbeatInterval,
             FrameMax = tuneMethod.FrameMax
         };
         await WriteMethodFrameAsync(tuneOkMethod);
@@ -153,12 +130,10 @@ public class InternalConnection
             VirtualHost = _params.Vhost
         };
         await WriteMethodFrameAsync(openMethod);
+        // Skip openOk response
+        await ReadNextMethodFrame();
 
-        nextFrame = await ReadNextMethodFrame();
-        // TODO: handle response?
-        var _openOkMethod = (OpenOkMethod)nextFrame.Method;
-
-        Logger.LogDebug("Handshake completed");
+        _logger.LogDebug("Handshake completed");
     }
 
     public async Task<IChannel> OpenChannelAsync()
@@ -171,9 +146,11 @@ public class InternalConnection
     private SystemChannel CreateSystemChannel()
     {
         var trxChannel = Channel.CreateUnbounded<object>();
-        var channel = new SystemChannel(trxChannel, _amqpFrameStream, this);
+        var channel = new SystemChannel(trxChannel, _amqpFrameStream!, this);
+        // Register channel
         OnConnectionClosed += channel.HandleConnectionClosed;
         _channelWriters[channel.ChannelId] = trxChannel.Writer;
+
         channel.StartListener();
 
         return channel;
@@ -181,9 +158,10 @@ public class InternalConnection
 
     private ChannelImpl CreateChannel(short? id = null)
     {
-        var channelId = id ?? NextChannelId();
+        var channelId = id ?? _channelIdGenerator.GenerateChannelId();
         var trxChannel = Channel.CreateUnbounded<object>();
-        var channel = new ChannelImpl(trxChannel, _amqpFrameStream, channelId);
+        var channel = new ChannelImpl(trxChannel, _amqpFrameStream!, channelId);
+        // Register channel
         OnConnectionClosed += channel.HandleConnectionClosed;
         _channelWriters[channelId] = trxChannel.Writer;
 
@@ -192,13 +170,7 @@ public class InternalConnection
 
     private void StartIncomingFramesListener(CancellationToken cancellationToken = default)
     {
-        var listener = new IncomingFrameListener(_amqpFrameStream, _channelWriters);
+        var listener = new IncomingFrameListener(_amqpFrameStream!, _channelWriters);
         Task.Run(async () => await listener.StartAsync(cancellationToken), cancellationToken);
-    }
-
-    private short NextChannelId()
-    {
-        Interlocked.Increment(ref _channelId);
-        return (short)_channelId;
     }
 }

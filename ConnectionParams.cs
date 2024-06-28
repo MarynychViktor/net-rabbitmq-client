@@ -7,4 +7,5 @@ public class ConnectionParams
     public string Vhost { get; set; } = "";
     public string User { get; set; } = "root";
     public string Password { get; set; } = "";
+    public short HeartbeatInterval { get; set; } = 60;
 }
