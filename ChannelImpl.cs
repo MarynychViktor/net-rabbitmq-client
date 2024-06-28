@@ -287,20 +287,13 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
                         break;
                     }
 
-                    Logger.LogDebug("Waiting for next frame....");
-                    var nextFrame = await RxChannel.ReadAsync(cancellationToken);
+                    var frame = (AmqpMethodFrame)(await RxChannel.ReadAsync(cancellationToken));
+                    Logger.LogDebug("Frame received:\n\t {method}", frame.Method);
 
-                    switch (nextFrame)
-                    {
-                        case AmqpMethodFrame frame:
-                            Logger.LogDebug("Frame received:\n\t {method}", frame.Method);
-                            if (TryHandleAsyncResponse(frame)) break;
+                    if (TryHandleAsyncResponse(frame)) continue;
+                    if (TryHandleConsumerMessage(frame)) continue;
 
-                            await HandleIncomingMessage(frame);
-                            break;
-                        default:
-                            throw new Exception("Unknown frame");
-                    }
+                    await HandleIncomingCall(frame);
                 }
             } catch (OperationCanceledException e) {
                 Logger.LogWarning("Frame loop exited");
@@ -324,10 +317,8 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         return true;
     }
 
-    private async Task HandleIncomingMessage(AmqpMethodFrame frame)
+    private async Task HandleIncomingCall(AmqpMethodFrame frame)
     {
-        if (TryHandleConsumerMessage(frame)) return;
-
         switch (frame.Method)
         {
             case ChannelCloseMethod closeMethod:
