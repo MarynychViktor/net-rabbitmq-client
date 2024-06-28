@@ -6,6 +6,7 @@ using AMQPClient.Protocol.Methods.Queues;
 
 namespace AMQPClient.Protocol;
 
+// TODO: review current approach with hardcoded dictionary and hardcoded list of async method responses
 public static class MethodMetaRegistry
 {
     private static readonly Dictionary<short, Type> _methodIdTypeMap = new()
@@ -45,6 +46,9 @@ public static class MethodMetaRegistry
         { 6031, typeof(BasicCancelOk) },
         { 6040, typeof(BasicPublish) },
         { 6060, typeof(BasicDeliver) },
+        { 6070, typeof(BasicGet) },
+        { 6071, typeof(BasicGetOk) },
+        { 6072, typeof(BasicGetEmpty) },
         { 6110, typeof(BasicRecover) },
         { 6111, typeof(BasicRecoverOk) }
     };
@@ -64,12 +68,16 @@ public static class MethodMetaRegistry
         typeof(QueuePurgeOk),
         typeof(BasicRecoverOk),
         typeof(BasicQosOk),
+        typeof(BasicGet),
+        typeof(BasicGetOk),
+        typeof(BasicGetEmpty),
     };
 
     private static readonly IReadOnlyList<Type> MethodsWithBody = new List<Type>
     {
         typeof(BasicDeliver),
-        typeof(BasicPublish)
+        typeof(BasicPublish),
+        typeof(BasicGetOk),
     };
 
     public static bool IsAsyncResponse(short classId, short methodId)

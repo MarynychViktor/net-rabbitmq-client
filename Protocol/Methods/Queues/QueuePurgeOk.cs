@@ -5,5 +5,6 @@ namespace AMQPClient.Protocol.Methods.Queues;
 [MethodDef(50, 31)]
 public class QueuePurgeOk : Method
 {
-    [IntField(0)] public int MessageCount { get; set; }
+    [IntField(0)]
+    public int MessageCount { get; set; }
 }

@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using AMQPClient.Protocol;
+using AMQPClient.Protocol.Methods;
 using AMQPClient.Protocol.Methods.Basic;
 using AMQPClient.Protocol.Methods.Channels;
 using AMQPClient.Protocol.Methods.Exchanges;
@@ -245,6 +246,27 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         await CallMethodAsync<BasicQosOk>(method);
     }
 
+    public async Task<IMessage?> BasicGet(string queue, bool noAck = false)
+    {
+        var method = new BasicGet()
+        {
+            QueueName = queue,
+            NoAck = (byte)(noAck ? 1 : 0)
+        };
+
+        var result = await CallFrameAsync(method);
+        if (result.Method is BasicGetOk getOkMethod)
+        {
+            var frame = result.MethodFrame;
+            return new IncomingMessage(frame.Body, frame.Properties, getOkMethod.DeliverTag,
+                getOkMethod.Redelivered == 1, getOkMethod.Exchange, getOkMethod.RoutingKey);
+        }
+
+        if (result.Method is BasicGetEmpty) return null;
+
+        throw new Exception($"Unexpected result {result}");
+    }
+
     internal async Task OpenAsync(short channelId)
     {
         _listenerCancellationSource = new CancellationTokenSource();
@@ -279,7 +301,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
                                 if (!SyncMethodHandles.TryDequeue(out var result))
                                     throw new Exception("No task completion source found");
 
-                                result.SetResult(new MethodResult(frame.Method));
+                                result.SetResult(new MethodResult(frame));
                                 break;
                             }
 

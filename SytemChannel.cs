@@ -47,7 +47,7 @@ internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameS
                                 if (!SyncMethodHandles.TryDequeue(out var result))
                                     throw new Exception("No task completion source found");
 
-                                result.SetResult(new MethodResult(frame.Method));
+                                result.SetResult(new MethodResult(frame));
                                 break;
                             }
 

@@ -20,4 +20,5 @@ public interface IChannel
     public Task BasicReject(IMessage message, bool requeue = false);
     public Task BasicRecover();
     public Task BasicQos(short prefetchCount, bool global = false);
+    public Task<IMessage?> BasicGet(string queue, bool noAck = false);
 }

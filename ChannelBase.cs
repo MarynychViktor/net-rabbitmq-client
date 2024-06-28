@@ -43,6 +43,22 @@ internal abstract class ChannelBase
         throw new Exception($"Method call failed with {result.ErrorCode} {result.ErrorMessage}");
     }
 
+    // TODO: review/refactor/rewrite Call* methods
+    protected async Task<MethodResult> CallFrameAsync(Method method, bool checkForClosed = true)
+    {
+        var taskSource = new TaskCompletionSource<MethodResult>(TaskCreationOptions.RunContinuationsAsynchronously);
+        await CallMethodAsync(method, checkForClosed);
+        SyncMethodHandles.Enqueue(taskSource);
+
+        var result = await taskSource.Task;
+        if (result.IsOk())
+        {
+            return result;
+        }
+
+        throw new Exception($"Method call failed with {result.ErrorCode} {result.ErrorMessage}");
+    }
+
     protected Task CallMethodAsync(Method method, bool checkForClosed = true)
     {
         if (checkForClosed && IsClosed)

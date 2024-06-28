@@ -68,9 +68,9 @@ Some advanced methods not implemented
   - Reject
   - Recover
   - Qos
+  - Get
 
 - [ ] TODO:
-  - Get
   - Nack
   - Return
 
