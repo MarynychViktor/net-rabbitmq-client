@@ -143,6 +143,21 @@ public class BinWriter : BinaryWriter
         WriteInBigEndian(BitConverter.GetBytes(value));
     }
 
+    public void WriteBit(byte value, bool appendToPrevious = false)
+    {
+        if (appendToPrevious)
+        {
+            _stream.Seek(-1, SeekOrigin.Current);
+            var prevValue = _stream.ReadByte();
+            _stream.Seek(-1, SeekOrigin.Current);
+            Write((byte)(value | prevValue));
+        }
+        else
+        {
+            Write(value);
+        }
+    }
+
     public byte[] ToArray()
     {
         if (_stream is MemoryStream memoryStream) return memoryStream.ToArray();
