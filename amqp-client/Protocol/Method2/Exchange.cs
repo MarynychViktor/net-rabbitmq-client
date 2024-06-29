@@ -1,9 +1,11 @@
-using AMQPClient.Protocol;
+namespace AMQPClient.Protocol.Method2;
 
 public class Exchange {
-	public class Declare {
-		public const short SourceClassId = 40;
-		public const short SourceMethodId = 10;
+	public class Declare : IFrameMethod {
+		private const short _sourceClassId = 40;
+		private const short _sourceMethodId = 10;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -50,9 +52,11 @@ public class Exchange {
 		}
 	}
 
-	public class DeclareOk {
-		public const short SourceClassId = 40;
-		public const short SourceMethodId = 11;
+	public class DeclareOk : IFrameMethod {
+		private const short _sourceClassId = 40;
+		private const short _sourceMethodId = 11;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
@@ -70,9 +74,11 @@ public class Exchange {
 		}
 	}
 
-	public class Delete {
-		public const short SourceClassId = 40;
-		public const short SourceMethodId = 20;
+	public class Delete : IFrameMethod {
+		private const short _sourceClassId = 40;
+		private const short _sourceMethodId = 20;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -104,9 +110,11 @@ public class Exchange {
 		}
 	}
 
-	public class DeleteOk {
-		public const short SourceClassId = 40;
-		public const short SourceMethodId = 21;
+	public class DeleteOk : IFrameMethod {
+		private const short _sourceClassId = 40;
+		private const short _sourceMethodId = 21;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 

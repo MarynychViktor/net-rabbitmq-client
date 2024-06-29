@@ -7,9 +7,11 @@ public class MethodGenerator
     public static string GenerateDefinition(ClassDef klass, MethodDef method)
     {
         var builder = new StringBuilder();
-        builder.AppendLine($"\tpublic class {StrFormatUtils.ToPascalCase(method.Name)} {{");
-        builder.AppendLine($"\t\tpublic const short SourceClassId = {klass.Id};");
-        builder.AppendLine($"\t\tpublic const short SourceMethodId = {method.Id};");
+        builder.AppendLine($"\tpublic class {StrFormatUtils.ToPascalCase(method.Name)} : IFrameMethod {{");
+        builder.AppendLine($"\t\tprivate const short _sourceClassId = {klass.Id};");
+        builder.AppendLine($"\t\tprivate const short _sourceMethodId = {method.Id};");
+        builder.AppendLine($"\t\tpublic short SourceClassId => _sourceClassId;");
+        builder.AppendLine($"\t\t public short SourceMethodId => _sourceMethodId;");
         builder.AppendLine($"\t\tpublic const bool IsAsyncResponse = {(method.IsAsyncResponse ? "true" : "false")};");
         builder.AppendLine($"\t\tpublic const bool HasBody = false;");
         

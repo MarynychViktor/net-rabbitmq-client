@@ -76,9 +76,12 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
         var classId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[..2]);
         var methodId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[2..4]);
         var methodInfo = typeof(Decoder).GetMethod("CreateMethodFrame")!;
-        var genericMethod = methodInfo.MakeGenericMethod(MethodTypeHelper.GetMethodType(classId, methodId));
-        var decodedMethod = (Method)genericMethod.Invoke(null, [_frameBody])!;
-        var methodFrame = new AmqpMethodFrame(channel, decodedMethod);
+        var tp = MethodTypeHelper.GetMethodType2(classId, methodId);
+        var instance = (IFrameMethod)(Activator.CreateInstance(tp));
+        
+        // var genericMethod = methodInfo.MakeGenericMethod(MethodTypeHelper.GetMethodType2(classId, methodId));
+        // var decodedMethod = (Method)genericMethod.Invoke(null, [_frameBody])!;
+        // var methodFrame = new AmqpMethodFrame(channel, decodedMethod);
 
 
         if (decodedMethod.HasBody())

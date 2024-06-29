@@ -1,9 +1,11 @@
-using AMQPClient.Protocol;
+namespace AMQPClient.Protocol.Method2;
 
 public class Connection {
-	public class Start {
-		public const short SourceClassId = 10;
-		public const short SourceMethodId = 10;
+	public class Start : IFrameMethod {
+		private const short _sourceClassId = 10;
+		private const short _sourceMethodId = 10;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -38,9 +40,11 @@ public class Connection {
 		}
 	}
 
-	public class StartOk {
-		public const short SourceClassId = 10;
-		public const short SourceMethodId = 11;
+	public class StartOk : IFrameMethod {
+		private const short _sourceClassId = 10;
+		private const short _sourceMethodId = 11;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
@@ -71,9 +75,11 @@ public class Connection {
 		}
 	}
 
-	public class Secure {
-		public const short SourceClassId = 10;
-		public const short SourceMethodId = 20;
+	public class Secure : IFrameMethod {
+		private const short _sourceClassId = 10;
+		private const short _sourceMethodId = 20;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -95,9 +101,11 @@ public class Connection {
 		}
 	}
 
-	public class SecureOk {
-		public const short SourceClassId = 10;
-		public const short SourceMethodId = 21;
+	public class SecureOk : IFrameMethod {
+		private const short _sourceClassId = 10;
+		private const short _sourceMethodId = 21;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
@@ -119,9 +127,11 @@ public class Connection {
 		}
 	}
 
-	public class Tune {
-		public const short SourceClassId = 10;
-		public const short SourceMethodId = 30;
+	public class Tune : IFrameMethod {
+		private const short _sourceClassId = 10;
+		private const short _sourceMethodId = 30;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -149,9 +159,11 @@ public class Connection {
 		}
 	}
 
-	public class TuneOk {
-		public const short SourceClassId = 10;
-		public const short SourceMethodId = 31;
+	public class TuneOk : IFrameMethod {
+		private const short _sourceClassId = 10;
+		private const short _sourceMethodId = 31;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
@@ -179,9 +191,11 @@ public class Connection {
 		}
 	}
 
-	public class Open {
-		public const short SourceClassId = 10;
-		public const short SourceMethodId = 40;
+	public class Open : IFrameMethod {
+		private const short _sourceClassId = 10;
+		private const short _sourceMethodId = 40;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -210,9 +224,11 @@ public class Connection {
 		}
 	}
 
-	public class OpenOk {
-		public const short SourceClassId = 10;
-		public const short SourceMethodId = 41;
+	public class OpenOk : IFrameMethod {
+		private const short _sourceClassId = 10;
+		private const short _sourceMethodId = 41;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
@@ -234,9 +250,11 @@ public class Connection {
 		}
 	}
 
-	public class Close {
-		public const short SourceClassId = 10;
-		public const short SourceMethodId = 50;
+	public class Close : IFrameMethod {
+		private const short _sourceClassId = 10;
+		private const short _sourceMethodId = 50;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -267,9 +285,11 @@ public class Connection {
 		}
 	}
 
-	public class CloseOk {
-		public const short SourceClassId = 10;
-		public const short SourceMethodId = 51;
+	public class CloseOk : IFrameMethod {
+		private const short _sourceClassId = 10;
+		private const short _sourceMethodId = 51;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 

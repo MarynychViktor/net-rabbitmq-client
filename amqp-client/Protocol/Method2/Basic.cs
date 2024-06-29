@@ -1,9 +1,11 @@
-using AMQPClient.Protocol;
+namespace AMQPClient.Protocol.Method2;
 
 public class Basic {
-	public class Qos {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 10;
+	public class Qos : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 10;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -32,9 +34,11 @@ public class Basic {
 		}
 	}
 
-	public class QosOk {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 11;
+	public class QosOk : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 11;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
@@ -52,9 +56,11 @@ public class Basic {
 		}
 	}
 
-	public class Consume {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 20;
+	public class Consume : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 20;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -98,9 +104,11 @@ public class Basic {
 		}
 	}
 
-	public class ConsumeOk {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 21;
+	public class ConsumeOk : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 21;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
@@ -122,9 +130,11 @@ public class Basic {
 		}
 	}
 
-	public class Cancel {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 30;
+	public class Cancel : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 30;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -150,9 +160,11 @@ public class Basic {
 		}
 	}
 
-	public class CancelOk {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 31;
+	public class CancelOk : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 31;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
@@ -174,9 +186,11 @@ public class Basic {
 		}
 	}
 
-	public class Publish {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 40;
+	public class Publish : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 40;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -211,9 +225,11 @@ public class Basic {
 		}
 	}
 
-	public class Return {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 50;
+	public class Return : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 50;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -244,9 +260,11 @@ public class Basic {
 		}
 	}
 
-	public class Deliver {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 60;
+	public class Deliver : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 60;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -281,9 +299,11 @@ public class Basic {
 		}
 	}
 
-	public class Get {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 70;
+	public class Get : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 70;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -312,9 +332,11 @@ public class Basic {
 		}
 	}
 
-	public class GetOk {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 71;
+	public class GetOk : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 71;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
@@ -349,9 +371,11 @@ public class Basic {
 		}
 	}
 
-	public class GetEmpty {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 72;
+	public class GetEmpty : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 72;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -373,9 +397,11 @@ public class Basic {
 		}
 	}
 
-	public class Ack {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 80;
+	public class Ack : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 80;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -401,9 +427,11 @@ public class Basic {
 		}
 	}
 
-	public class Reject {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 90;
+	public class Reject : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 90;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -429,9 +457,11 @@ public class Basic {
 		}
 	}
 
-	public class RecoverAsync {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 100;
+	public class RecoverAsync : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 100;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -454,9 +484,11 @@ public class Basic {
 		}
 	}
 
-	public class Recover {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 110;
+	public class Recover : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 110;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
@@ -479,9 +511,11 @@ public class Basic {
 		}
 	}
 
-	public class RecoverOk {
-		public const short SourceClassId = 60;
-		public const short SourceMethodId = 111;
+	public class RecoverOk : IFrameMethod {
+		private const short _sourceClassId = 60;
+		private const short _sourceMethodId = 111;
+		public short SourceClassId => _sourceClassId;
+		 public short SourceMethodId => _sourceMethodId;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 

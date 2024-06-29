@@ -7,7 +7,7 @@ public static class ClassGenerator
     public static void GenerateDefinition(ClassDef klass, string path)
     {
         var builder = new StringBuilder();
-        builder.AppendLine("using AMQPClient.Protocol;");
+        builder.AppendLine("namespace AMQPClient.Protocol.Method2;");
         builder.AppendLine();
         builder.AppendLine($"public class {StrFormatUtils.ToPascalCase(klass.Name)} {{");
 
