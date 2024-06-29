@@ -7,7 +7,7 @@ public class Channel {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public string Reserved1 {get;set;}
+		public string Reserved1 { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -31,7 +31,7 @@ public class Channel {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-		public string Reserved1 {get;set;}
+		public string Reserved1 { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -55,7 +55,7 @@ public class Channel {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public bool Active {get;set;}
+		public bool Active { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -80,7 +80,7 @@ public class Channel {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-		public bool Active {get;set;}
+		public bool Active { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -105,10 +105,10 @@ public class Channel {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short ReplyCode {get;set;}
-		public string ReplyText {get;set;}
-		public short ClassId {get;set;}
-		public short MethodId {get;set;}
+		public short ReplyCode { get; set; }
+		public string ReplyText { get; set; }
+		public short ClassId { get; set; }
+		public short MethodId { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -137,7 +137,6 @@ public class Channel {
 		public const short SourceMethodId = 41;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
-
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();

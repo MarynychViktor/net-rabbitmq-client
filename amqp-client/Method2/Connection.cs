@@ -7,11 +7,11 @@ public class Connection {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public bool VersionMajor {get;set;}
-		public bool VersionMinor {get;set;}
-		public Dictionary<string, object> ServerProperties {get;set;}
-		public string Mechanisms {get;set;}
-		public string Locales {get;set;}
+		public bool VersionMajor { get; set; }
+		public bool VersionMinor { get; set; }
+		public Dictionary<string, object> ServerProperties { get; set; }
+		public string Mechanisms { get; set; }
+		public string Locales { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -44,10 +44,10 @@ public class Connection {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-		public Dictionary<string, object> ClientProperties {get;set;}
-		public string Mechanism {get;set;}
-		public string Response {get;set;}
-		public string Locale {get;set;}
+		public Dictionary<string, object> ClientProperties { get; set; }
+		public string Mechanism { get; set; }
+		public string Response { get; set; }
+		public string Locale { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -77,7 +77,7 @@ public class Connection {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public string Challenge {get;set;}
+		public string Challenge { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -101,7 +101,7 @@ public class Connection {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-		public string Response {get;set;}
+		public string Response { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -125,9 +125,9 @@ public class Connection {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short ChannelMax {get;set;}
-		public int FrameMax {get;set;}
-		public short Heartbeat {get;set;}
+		public short ChannelMax { get; set; }
+		public int FrameMax { get; set; }
+		public short Heartbeat { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -155,9 +155,9 @@ public class Connection {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-		public short ChannelMax {get;set;}
-		public int FrameMax {get;set;}
-		public short Heartbeat {get;set;}
+		public short ChannelMax { get; set; }
+		public int FrameMax { get; set; }
+		public short Heartbeat { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -185,9 +185,9 @@ public class Connection {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public string VirtualHost {get;set;}
-		public string Reserved1 {get;set;}
-		public bool Reserved2 {get;set;}
+		public string VirtualHost { get; set; }
+		public string Reserved1 { get; set; }
+		public bool Reserved2 { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -216,7 +216,7 @@ public class Connection {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-		public string Reserved1 {get;set;}
+		public string Reserved1 { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -240,10 +240,10 @@ public class Connection {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short ReplyCode {get;set;}
-		public string ReplyText {get;set;}
-		public short ClassId {get;set;}
-		public short MethodId {get;set;}
+		public short ReplyCode { get; set; }
+		public string ReplyText { get; set; }
+		public short ClassId { get; set; }
+		public short MethodId { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -272,7 +272,6 @@ public class Connection {
 		public const short SourceMethodId = 51;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
-
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();

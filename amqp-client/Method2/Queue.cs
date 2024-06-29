@@ -7,14 +7,14 @@ public class Queue {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short Reserved1 {get;set;}
-		public string Queue {get;set;}
-		public bool Passive {get;set;}
-		public bool Durable {get;set;}
-		public bool Exclusive {get;set;}
-		public bool AutoDelete {get;set;}
-		public bool NoWait {get;set;}
-		public Dictionary<string, object> Arguments {get;set;}
+		public short Reserved1 { get; set; }
+		public string Queue { get; set; }
+		public bool Passive { get; set; }
+		public bool Durable { get; set; }
+		public bool Exclusive { get; set; }
+		public bool AutoDelete { get; set; }
+		public bool NoWait { get; set; }
+		public Dictionary<string, object> Arguments { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -53,9 +53,9 @@ public class Queue {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-		public string Queue {get;set;}
-		public int MessageCount {get;set;}
-		public int ConsumerCount {get;set;}
+		public string Queue { get; set; }
+		public int MessageCount { get; set; }
+		public int ConsumerCount { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -83,12 +83,12 @@ public class Queue {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short Reserved1 {get;set;}
-		public string Queue {get;set;}
-		public string Exchange {get;set;}
-		public string RoutingKey {get;set;}
-		public bool NoWait {get;set;}
-		public Dictionary<string, object> Arguments {get;set;}
+		public short Reserved1 { get; set; }
+		public string Queue { get; set; }
+		public string Exchange { get; set; }
+		public string RoutingKey { get; set; }
+		public bool NoWait { get; set; }
+		public Dictionary<string, object> Arguments { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -123,7 +123,6 @@ public class Queue {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-
 		public byte[] Serialize() {
 			var writer = new BinWriter();
 			writer.WriteShort(SourceClassId);
@@ -144,11 +143,11 @@ public class Queue {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short Reserved1 {get;set;}
-		public string Queue {get;set;}
-		public string Exchange {get;set;}
-		public string RoutingKey {get;set;}
-		public Dictionary<string, object> Arguments {get;set;}
+		public short Reserved1 { get; set; }
+		public string Queue { get; set; }
+		public string Exchange { get; set; }
+		public string RoutingKey { get; set; }
+		public Dictionary<string, object> Arguments { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -180,7 +179,6 @@ public class Queue {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-
 		public byte[] Serialize() {
 			var writer = new BinWriter();
 			writer.WriteShort(SourceClassId);
@@ -201,9 +199,9 @@ public class Queue {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short Reserved1 {get;set;}
-		public string Queue {get;set;}
-		public bool NoWait {get;set;}
+		public short Reserved1 { get; set; }
+		public string Queue { get; set; }
+		public bool NoWait { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -232,7 +230,7 @@ public class Queue {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-		public int MessageCount {get;set;}
+		public int MessageCount { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -256,11 +254,11 @@ public class Queue {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short Reserved1 {get;set;}
-		public string Queue {get;set;}
-		public bool IfUnused {get;set;}
-		public bool IfEmpty {get;set;}
-		public bool NoWait {get;set;}
+		public short Reserved1 { get; set; }
+		public string Queue { get; set; }
+		public bool IfUnused { get; set; }
+		public bool IfEmpty { get; set; }
+		public bool NoWait { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -293,7 +291,7 @@ public class Queue {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-		public int MessageCount {get;set;}
+		public int MessageCount { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();

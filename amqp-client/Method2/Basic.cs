@@ -7,9 +7,9 @@ public class Basic {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public int PrefetchSize {get;set;}
-		public short PrefetchCount {get;set;}
-		public bool Global {get;set;}
+		public int PrefetchSize { get; set; }
+		public short PrefetchCount { get; set; }
+		public bool Global { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -38,7 +38,6 @@ public class Basic {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-
 		public byte[] Serialize() {
 			var writer = new BinWriter();
 			writer.WriteShort(SourceClassId);
@@ -59,14 +58,14 @@ public class Basic {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short Reserved1 {get;set;}
-		public string Queue {get;set;}
-		public string ConsumerTag {get;set;}
-		public bool NoLocal {get;set;}
-		public bool NoAck {get;set;}
-		public bool Exclusive {get;set;}
-		public bool NoWait {get;set;}
-		public Dictionary<string, object> Arguments {get;set;}
+		public short Reserved1 { get; set; }
+		public string Queue { get; set; }
+		public string ConsumerTag { get; set; }
+		public bool NoLocal { get; set; }
+		public bool NoAck { get; set; }
+		public bool Exclusive { get; set; }
+		public bool NoWait { get; set; }
+		public Dictionary<string, object> Arguments { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -105,7 +104,7 @@ public class Basic {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-		public string ConsumerTag {get;set;}
+		public string ConsumerTag { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -129,8 +128,8 @@ public class Basic {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public string ConsumerTag {get;set;}
-		public bool NoWait {get;set;}
+		public string ConsumerTag { get; set; }
+		public bool NoWait { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -157,7 +156,7 @@ public class Basic {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-		public string ConsumerTag {get;set;}
+		public string ConsumerTag { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -181,11 +180,11 @@ public class Basic {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short Reserved1 {get;set;}
-		public string Exchange {get;set;}
-		public string RoutingKey {get;set;}
-		public bool Mandatory {get;set;}
-		public bool Immediate {get;set;}
+		public short Reserved1 { get; set; }
+		public string Exchange { get; set; }
+		public string RoutingKey { get; set; }
+		public bool Mandatory { get; set; }
+		public bool Immediate { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -218,10 +217,10 @@ public class Basic {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short ReplyCode {get;set;}
-		public string ReplyText {get;set;}
-		public string Exchange {get;set;}
-		public string RoutingKey {get;set;}
+		public short ReplyCode { get; set; }
+		public string ReplyText { get; set; }
+		public string Exchange { get; set; }
+		public string RoutingKey { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -251,11 +250,11 @@ public class Basic {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public string ConsumerTag {get;set;}
-		public int DeliveryTag {get;set;}
-		public bool Redelivered {get;set;}
-		public string Exchange {get;set;}
-		public string RoutingKey {get;set;}
+		public string ConsumerTag { get; set; }
+		public int DeliveryTag { get; set; }
+		public bool Redelivered { get; set; }
+		public string Exchange { get; set; }
+		public string RoutingKey { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -288,9 +287,9 @@ public class Basic {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short Reserved1 {get;set;}
-		public string Queue {get;set;}
-		public bool NoAck {get;set;}
+		public short Reserved1 { get; set; }
+		public string Queue { get; set; }
+		public bool NoAck { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -319,11 +318,11 @@ public class Basic {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-		public int DeliveryTag {get;set;}
-		public bool Redelivered {get;set;}
-		public string Exchange {get;set;}
-		public string RoutingKey {get;set;}
-		public int MessageCount {get;set;}
+		public int DeliveryTag { get; set; }
+		public bool Redelivered { get; set; }
+		public string Exchange { get; set; }
+		public string RoutingKey { get; set; }
+		public int MessageCount { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -356,7 +355,7 @@ public class Basic {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public string Reserved1 {get;set;}
+		public string Reserved1 { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -380,8 +379,8 @@ public class Basic {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public int DeliveryTag {get;set;}
-		public bool Multiple {get;set;}
+		public int DeliveryTag { get; set; }
+		public bool Multiple { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -408,8 +407,8 @@ public class Basic {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public int DeliveryTag {get;set;}
-		public bool Requeue {get;set;}
+		public int DeliveryTag { get; set; }
+		public bool Requeue { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -436,7 +435,7 @@ public class Basic {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public bool Requeue {get;set;}
+		public bool Requeue { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -461,7 +460,7 @@ public class Basic {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public bool Requeue {get;set;}
+		public bool Requeue { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -485,7 +484,6 @@ public class Basic {
 		public const short SourceMethodId = 111;
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
-
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();

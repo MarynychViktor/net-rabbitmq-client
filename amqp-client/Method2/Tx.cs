@@ -7,7 +7,6 @@ public class Tx {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-
 		public byte[] Serialize() {
 			var writer = new BinWriter();
 			writer.WriteShort(SourceClassId);
@@ -27,7 +26,6 @@ public class Tx {
 		public const short SourceMethodId = 11;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
-
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -49,7 +47,6 @@ public class Tx {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-
 		public byte[] Serialize() {
 			var writer = new BinWriter();
 			writer.WriteShort(SourceClassId);
@@ -69,7 +66,6 @@ public class Tx {
 		public const short SourceMethodId = 21;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
-
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -91,7 +87,6 @@ public class Tx {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-
 		public byte[] Serialize() {
 			var writer = new BinWriter();
 			writer.WriteShort(SourceClassId);
@@ -111,7 +106,6 @@ public class Tx {
 		public const short SourceMethodId = 31;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
-
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();

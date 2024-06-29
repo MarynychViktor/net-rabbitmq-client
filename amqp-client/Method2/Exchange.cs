@@ -7,15 +7,15 @@ public class Exchange {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short Reserved1 {get;set;}
-		public string Exchange {get;set;}
-		public string Type {get;set;}
-		public bool Passive {get;set;}
-		public bool Durable {get;set;}
-		public bool Reserved2 {get;set;}
-		public bool Reserved3 {get;set;}
-		public bool NoWait {get;set;}
-		public Dictionary<string, object> Arguments {get;set;}
+		public short Reserved1 { get; set; }
+		public string Exchange { get; set; }
+		public string Type { get; set; }
+		public bool Passive { get; set; }
+		public bool Durable { get; set; }
+		public bool Reserved2 { get; set; }
+		public bool Reserved3 { get; set; }
+		public bool NoWait { get; set; }
+		public Dictionary<string, object> Arguments { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -56,7 +56,6 @@ public class Exchange {
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
 
-
 		public byte[] Serialize() {
 			var writer = new BinWriter();
 			writer.WriteShort(SourceClassId);
@@ -77,10 +76,10 @@ public class Exchange {
 		public const bool IsAsyncResponse = false;
 		public const bool HasBody = false;
 
-		public short Reserved1 {get;set;}
-		public string Exchange {get;set;}
-		public bool IfUnused {get;set;}
-		public bool NoWait {get;set;}
+		public short Reserved1 { get; set; }
+		public string Exchange { get; set; }
+		public bool IfUnused { get; set; }
+		public bool NoWait { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -110,7 +109,6 @@ public class Exchange {
 		public const short SourceMethodId = 21;
 		public const bool IsAsyncResponse = true;
 		public const bool HasBody = false;
-
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();

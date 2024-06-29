@@ -145,7 +145,7 @@ public class InternalConnection
 
     private SystemChannel CreateSystemChannel()
     {
-        var trxChannel = Channel.CreateUnbounded<object>();
+        var trxChannel = System.Threading.Channels.Channel.CreateUnbounded<object>();
         var channel = new SystemChannel(trxChannel, _amqpFrameStream!, this);
         // Register channel
         OnConnectionClosed += channel.HandleConnectionClosed;
@@ -159,7 +159,7 @@ public class InternalConnection
     private ChannelImpl CreateChannel(short? id = null)
     {
         var channelId = id ?? _channelIdGenerator.GenerateChannelId();
-        var trxChannel = Channel.CreateUnbounded<object>();
+        var trxChannel = System.Threading.Channels.Channel.CreateUnbounded<object>();
         var channel = new ChannelImpl(trxChannel, _amqpFrameStream!, channelId);
         // Register channel
         OnConnectionClosed += channel.HandleConnectionClosed;

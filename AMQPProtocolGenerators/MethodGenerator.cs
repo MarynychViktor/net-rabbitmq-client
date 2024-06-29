@@ -12,14 +12,15 @@ public class MethodGenerator
         builder.AppendLine($"\t\tpublic const short SourceMethodId = {method.Id};");
         builder.AppendLine($"\t\tpublic const bool IsAsyncResponse = {(method.IsAsyncResponse ? "true" : "false")};");
         builder.AppendLine($"\t\tpublic const bool HasBody = false;");
-        builder.AppendLine();
+        
+        if (method.Fields.Any()) builder.AppendLine();
 
         foreach (var field in method.Fields)
         {
             var localDomain = DomainTypes.DomainToInternalTypeMap[field.Domain];
-            builder.AppendLine($"\t\tpublic {(localDomain == "byte" ? "bool" : localDomain )} {StrFormatUtils.ToPascalCase(field.Name)} {{get;set;}}");
+            builder.AppendLine($"\t\tpublic {(localDomain == "byte" ? "bool" : localDomain )} {StrFormatUtils.ToPascalCase(field.Name)} {{ get; set; }}");
         }
-        builder.AppendLine();
+
         GenerateSerializer(builder, method);
         builder.AppendLine();
 
@@ -31,7 +32,7 @@ public class MethodGenerator
 
     private static void GenerateSerializer(StringBuilder builder, MethodDef method)
     {
-        
+        builder.AppendLine();
         builder.AppendLine("\t\tpublic byte[] Serialize() {");
         builder.AppendLine("\t\t\tvar writer = new BinWriter();");
         builder.AppendLine($"\t\t\twriter.WriteShort(SourceClassId);");
@@ -90,11 +91,6 @@ public class MethodGenerator
         for (var i = 0; i < method.Fields.Count; i++)
         {
             var field = method.Fields[i];
-            // if (field.IsReserved)
-            // {
-            //     continue;
-            // }
-
             var localDomain = DomainTypes.DomainToInternalTypeMap[field.Domain];
 
             if (localDomain == "byte")
@@ -125,6 +121,7 @@ public class MethodGenerator
                 builder.AppendLine($"\t\t\t{StrFormatUtils.ToPascalCase(field.Name)} = reader.{DomainTypes.GetDomainReaderMethod(field.Domain)}();");
             }
         }
+
         builder.AppendLine("\t\t}");
     }
 }
