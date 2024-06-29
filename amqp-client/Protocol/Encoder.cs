@@ -12,8 +12,8 @@ public class Encoder
     {
         var writer = new BinWriter();
         var methodAttribute = (MethodDefAttribute)methodFrame.GetType().GetCustomAttribute(typeof(MethodDefAttribute))!;
-        writer.Write(methodAttribute.ClassId);
-        writer.Write(methodAttribute.MethodId);
+        writer.WriteShort(methodAttribute.ClassId);
+        writer.WriteShort(methodAttribute.MethodId);
 
         var propertiesWithAttrs = methodFrame.GetType().GetProperties()
             .Select(info =>
@@ -32,13 +32,13 @@ public class Encoder
                     writer.Write((byte)property.GetValue(methodFrame));
                     break;
                 case ShortField attr:
-                    writer.Write((short)property.GetValue(methodFrame));
+                    writer.WriteShort((short)property.GetValue(methodFrame));
                     break;
                 case IntField attr:
-                    writer.Write((int)property.GetValue(methodFrame));
+                    writer.WriteInt((int)property.GetValue(methodFrame));
                     break;
                 case LongField attr:
-                    writer.Write((long)property.GetValue(methodFrame));
+                    writer.WriteLong((long)property.GetValue(methodFrame));
                     break;
                 case PropertiesTableField attr:
                     writer.WriteFieldTable((Dictionary<string, object>)property.GetValue(methodFrame));

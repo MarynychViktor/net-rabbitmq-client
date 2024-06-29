@@ -70,8 +70,16 @@ internal abstract class ChannelBase
         {
             throw new ResourceClosedException(LastErrorResult!.ErrorCode, LastErrorResult.ErrorMessage);
         }
-
         var bytes = Encoder.MarshalMethodFrame(method);
+
+        if (method.ClassId == 50 && method.MethodId == 20)
+        {
+            var x = 1;
+            var met = new Queue.Bind();
+            met.Deserialize(bytes);
+            var y = 2;
+            bytes = met.Serialize();
+        }
         return _frameSender.SendFrameAsync(new AmqpFrame(ChannelId, bytes, FrameType.Method));
     }
     

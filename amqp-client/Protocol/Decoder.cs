@@ -10,9 +10,9 @@ public class Decoder
     {
         var reader = new BinReader(body);
         // Skip classId
-        reader.ReadInt16();
+        reader.ReadShort();
         // Skip methodId
-        reader.ReadInt16();
+        reader.ReadShort();
         var method = new T();
 
         var propertiesWithAttrs = typeof(T).GetProperties()
@@ -32,13 +32,13 @@ public class Decoder
                     property.SetValue(method, reader.ReadByte());
                     break;
                 case ShortField:
-                    property.SetValue(method, reader.ReadInt16());
+                    property.SetValue(method, reader.ReadShort());
                     break;
                 case IntField:
-                    property.SetValue(method, reader.ReadInt32());
+                    property.SetValue(method, reader.ReadInt());
                     break;
                 case LongField:
-                    property.SetValue(method, reader.ReadInt64());
+                    property.SetValue(method, reader.ReadLong());
                     break;
                 case PropertiesTableField:
                     property.SetValue(method, reader.ReadFieldTable());

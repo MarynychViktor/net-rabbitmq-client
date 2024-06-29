@@ -1,6 +1,6 @@
 namespace AMQPProtocolGenerators;
 
-public static class DomainUtils
+public static class StrFormatUtils
 {
     public static string ToPascalCase(string domain)
     {

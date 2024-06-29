@@ -37,9 +37,9 @@ public class QueueDelete2
     public byte[] Serialize()
     {
         var writer = new BinWriter();
-        writer.Write(ClassId);
-        writer.Write(MethodId);
-        writer.Write(Reserved1);
+        writer.WriteShort(ClassId);
+        writer.WriteShort(MethodId);
+        writer.WriteShort(Reserved1);
         writer.WriteShortStr(QueueName);
         var flags = QueueDeleteFlags.None;
         if (IfUnused) flags |= QueueDeleteFlags.IfUnused;

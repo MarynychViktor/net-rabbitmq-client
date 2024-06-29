@@ -20,8 +20,8 @@ public class AMQPFrame
     {
         var writer = new BinWriter();
         writer.Write((byte)1);
-        writer.Write(Channel);
-        writer.Write(Body.Length);
+        writer.WriteShort(Channel);
+        writer.WriteInt(Body.Length);
         writer.Write(Body);
         writer.Write((byte)0xCE);
 

@@ -19,7 +19,7 @@ public static class DomainTypes
         { "message-count", "int" },
         { "reply-code", "short" },
         { "reply-text", "string" },
-        { "bit", "bool" },
+        { "bit", "byte" },
         { "octet", "byte" },
         { "short", "short" },
         { "long", "int" },
@@ -29,36 +29,41 @@ public static class DomainTypes
         { "timestamp", "timestamp" },
         { "table", "Dictionary<string, object>" },
     };
-    private static readonly Dictionary<string, string> DomainToVisitorMap = new()
+    private static readonly Dictionary<string, string> DomainToWriterMap = new()
     {
-        { "class-id", "short" },
-        { "consumer-tag", "shortstr" },
-        { "delivery-tag", "int" },
-        { "exchange-name", "shortstr" },
-        { "method-id", "short" },
-        { "no-ack", "bit" },
-        { "no-local", "bit" },
-        { "no-wait", "bit" },
-        { "path", "shortstr" },
-        { "peer-properties", "table" },
-        { "queue-name", "shortstr" },
-        { "redelivered", "bit" },
-        { "message-count", "int" },
-        { "reply-code", "short" },
-        { "reply-text", "shortstr" },
-        { "bit", "bit" },
-        { "octet", "bit" },
-        { "short", "short" },
-        { "long", "int" },
-        { "longlong", "long" },
-        { "shortstr", "shortstr" },
-        { "longstr", "longstr" },
+        { "class-id", "Short" },
+        { "consumer-tag", "ShortStr" },
+        { "delivery-tag", "Int" },
+        { "exchange-name", "ShortStr" },
+        { "method-id", "Short" },
+        { "no-ack", "Bit" },
+        { "no-local", "Bit" },
+        { "no-wait", "Bit" },
+        { "path", "ShortStr" },
+        { "peer-properties", "FieldTable" },
+        { "queue-name", "ShortStr" },
+        { "redelivered", "Bit" },
+        { "message-count", "Int" },
+        { "reply-code", "Short" },
+        { "reply-text", "ShortStr" },
+        { "bit", "Bit" },
+        { "octet", "Bit" },
+        { "short", "Short" },
+        { "long", "Int" },
+        { "longlong", "Long" },
+        { "shortstr", "ShortStr" },
+        { "longstr", "LongStr" },
         { "timestamp", "timestamp" },
-        { "table", "table" },
+        { "table", "FieldTable" },
     };
 
-    public static string GetDomainVisitor(string domain)
+    public static string GetDomainWriterMethod(string domain)
     {
-        return DomainUtils.ToPascalCase(DomainToVisitorMap[domain]);
+        return $"Write{StrFormatUtils.ToPascalCase(DomainToWriterMap[domain])}";
+    }
+    
+    public static string GetDomainReaderMethod(string domain)
+    {
+        return $"Read{StrFormatUtils.ToPascalCase(DomainToWriterMap[domain])}";
     }
 }

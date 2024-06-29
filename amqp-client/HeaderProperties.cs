@@ -52,7 +52,7 @@ public class HeaderProperties
     {
         using var reader = new BinReader(bytes);
         HeaderProperties props = new();
-        var flags = (HeaderPropertiesFlags)reader.ReadUInt16();
+        var flags = (HeaderPropertiesFlags)reader.ReadUshort();
 
         if ((flags & HeaderPropertiesFlags.ContentType) != 0) props.ContentType = reader.ReadShortStr();
 
@@ -74,7 +74,7 @@ public class HeaderProperties
 
         if ((flags & HeaderPropertiesFlags.MessageId) != 0) props.MessageId = reader.ReadShortStr();
 
-        if ((flags & HeaderPropertiesFlags.Timestamp) != 0) props.Timestamp = reader.ReadUInt64();
+        if ((flags & HeaderPropertiesFlags.Timestamp) != 0) props.Timestamp = reader.ReadUlong();
 
         if ((flags & HeaderPropertiesFlags.Type) != 0) props.Type = reader.ReadShortStr();
 
@@ -150,7 +150,7 @@ public class HeaderProperties
         if (props.Timestamp != null)
         {
             flags &= HeaderPropertiesFlags.Timestamp;
-            valueWriter.Write((ulong)props.Timestamp);
+            valueWriter.WriteUlong((ulong)props.Timestamp);
         }
 
         if (props.Type != null)

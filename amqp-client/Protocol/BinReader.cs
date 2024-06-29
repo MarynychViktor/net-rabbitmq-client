@@ -18,7 +18,7 @@ public class BinReader : BinaryReader
 
     public Dictionary<string, object> ReadFieldTable()
     {
-        var tableSize = ReadUInt32();
+        var tableSize = ReadUint();
         var endPos = _stream.Position + tableSize;
         Dictionary<string, object> properties = new();
 
@@ -56,48 +56,48 @@ public class BinReader : BinaryReader
 
     public string ReadLongStr()
     {
-        long size = ReadUInt32();
+        long size = ReadUint();
         var bytes = ReadBytes((int)size);
         return Encoding.ASCII.GetString(bytes);
     }
 
-    public override short ReadInt16()
+    public short ReadShort()
     {
         var bytes = ReadBytesInMachineOrder(2);
         return BitConverter.ToInt16(bytes);
     }
 
-    public override int ReadInt32()
+    public int ReadInt()
     {
         var bytes = ReadBytesInMachineOrder(4);
         return BitConverter.ToInt32(bytes);
     }
 
-    public override long ReadInt64()
+    public long ReadLong()
     {
         var bytes = ReadBytesInMachineOrder(8);
         return BitConverter.ToInt64(bytes);
     }
 
-    public override ushort ReadUInt16()
+    public ushort ReadUshort()
     {
         var bytes = ReadBytesInMachineOrder(2);
         return BitConverter.ToUInt16(bytes);
     }
 
-    public override uint ReadUInt32()
+    public uint ReadUint()
     {
         var bytes = ReadBytesInMachineOrder(4);
         return BitConverter.ToUInt32(bytes);
     }
 
-    public override ulong ReadUInt64()
+    public ulong ReadUlong()
     {
         var bytes = ReadBytesInMachineOrder(8);
         return BitConverter.ToUInt64(bytes);
     }
 
-    public override float ReadSingle()
+    public float ReadFloat()
     {
         var bytes = ReadBytesInMachineOrder(4);
         return BitConverter.ToSingle(bytes);
@@ -120,19 +120,19 @@ public class BinReader : BinaryReader
             case 'B':
                 return ReadByte();
             case 'U':
-                return ReadInt16();
+                return ReadShort();
             case 'u':
-                return ReadUInt16();
+                return ReadUshort();
             case 'I':
-                return ReadInt32();
+                return ReadInt();
             case 'i':
-                return ReadUInt32();
+                return ReadUint();
             case 'L':
-                return ReadInt64();
+                return ReadLong();
             case 'l':
-                return ReadUInt64();
+                return ReadUlong();
             case 'f':
-                return ReadSingle();
+                return ReadFloat();
             case 'd':
                 return ReadDouble();
             case 'D':
@@ -161,7 +161,7 @@ public class BinReader : BinaryReader
     public HeaderProperties ReadProperties()
     {
         HeaderProperties props = new();
-        var flags = (HeaderPropertiesFlags)ReadUInt16();
+        var flags = (HeaderPropertiesFlags)ReadUshort();
 
         if ((flags & HeaderPropertiesFlags.ContentType) != 0) props.ContentType = ReadShortStr();
 
@@ -181,7 +181,7 @@ public class BinReader : BinaryReader
 
         if ((flags & HeaderPropertiesFlags.MessageId) != 0) props.MessageId = ReadShortStr();
 
-        if ((flags & HeaderPropertiesFlags.Timestamp) != 0) props.Timestamp = ReadUInt64();
+        if ((flags & HeaderPropertiesFlags.Timestamp) != 0) props.Timestamp = ReadUlong();
 
         if ((flags & HeaderPropertiesFlags.Type) != 0) props.Type = ReadShortStr();
 

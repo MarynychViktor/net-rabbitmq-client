@@ -19,11 +19,11 @@ public class AmqpHeaderFrame : AmqpFrame
         var payload = Properties.ToRaw();
         var writer = new BinWriter();
         writer.Write((byte)Type);
-        writer.Write(Channel);
-        writer.Write(payload.Length + 12);
-        writer.Write(ClassId);
-        writer.Write((short)0);
-        writer.Write(BodyLength);
+        writer.WriteShort(Channel);
+        writer.WriteInt(payload.Length + 12);
+        writer.WriteShort(ClassId);
+        writer.WriteShort((short)0);
+        writer.WriteLong(BodyLength);
         writer.Write(payload);
         writer.Write((byte)0xCE);
 

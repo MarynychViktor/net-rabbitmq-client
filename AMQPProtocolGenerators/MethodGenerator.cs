@@ -7,26 +7,24 @@ public class MethodGenerator
     public static string GenerateDefinition(ClassDef klass, MethodDef method)
     {
         var builder = new StringBuilder();
-        builder.AppendLine("using AMQPClient.Protocol;");
-        builder.AppendLine();
-        builder.AppendLine($"public record {DomainUtils.ToPascalCase($"{klass.Name}-{method.Name}")} {{");
-        builder.AppendLine($"\tpublic const short ClassId = {klass.Id};");
-        builder.AppendLine($"\tpublic const short MethodId = {method.Id};");
-        builder.AppendLine($"\tpublic const bool IsAsyncResponse = {(method.IsAsyncResponse ? "true" : "false")};");
-        builder.AppendLine($"\tpublic const bool HasBody = false;");
+        builder.AppendLine($"\tpublic class {StrFormatUtils.ToPascalCase(method.Name)} {{");
+        builder.AppendLine($"\t\tpublic const short SourceClassId = {klass.Id};");
+        builder.AppendLine($"\t\tpublic const short SourceMethodId = {method.Id};");
+        builder.AppendLine($"\t\tpublic const bool IsAsyncResponse = {(method.IsAsyncResponse ? "true" : "false")};");
+        builder.AppendLine($"\t\tpublic const bool HasBody = false;");
         builder.AppendLine();
 
         foreach (var field in method.Fields)
         {
             var localDomain = DomainTypes.DomainToInternalTypeMap[field.Domain];
-            builder.AppendLine($"\tpublic {localDomain} {DomainUtils.ToPascalCase(field.Name)} {{get;set;}}");
+            builder.AppendLine($"\t\tpublic {(localDomain == "byte" ? "bool" : localDomain )} {StrFormatUtils.ToPascalCase(field.Name)} {{get;set;}}");
         }
         builder.AppendLine();
         GenerateSerializer(builder, method);
         builder.AppendLine();
 
         GenerateDeserializer(builder, method);
-        builder.AppendLine("}}");
+        builder.AppendLine("\t}");
     
         return builder.ToString();
     }
@@ -34,51 +32,74 @@ public class MethodGenerator
     private static void GenerateSerializer(StringBuilder builder, MethodDef method)
     {
         
-        builder.AppendLine("\tpublic void Serialize() {");
-        builder.AppendLine("\t\tvar writer = new BinWriter();");
-        FieldDef? prevField = null;
-        builder.AppendLine($"\t\twriter.Write(ClassId);");
-        builder.AppendLine($"\t\twriter.Write(MethodId);");
-        foreach (var field in method.Fields)
-        {
-            var localDomain = DomainTypes.DomainToInternalTypeMap[field.Domain];
-            if (localDomain == "byte")
-            {
-                var append = prevField != null && !string.Equals(prevField.Domain, field.Domain) ? "true" : "false";
-                builder.AppendLine($"\t\twriter.Write{DomainUtils.ToPascalCase(field.Domain)}({DomainUtils.ToPascalCase(field.Name)}, {append});");
-            }
-            else
-            {
-                builder.AppendLine($"\t\twriter.Write{DomainTypes.GetDomainVisitor(field.Domain)}({DomainUtils.ToPascalCase(field.Name)});");
-            }
-
-            prevField = field;
-        }
-
-        builder.AppendLine("\t\treturn writer.ToArray();");
-        builder.AppendLine("\t}");
-    }
-
-    private static void GenerateDeserializer(StringBuilder builder, MethodDef method)
-    {
-        builder.AppendLine("\tpublic void Deserialize(byte[] bytes) {");
-        builder.AppendLine("\t\tvar reader = new BitReader(bytes);");
-        builder.AppendLine($"\t\treader.ReadShort(ClassId);");
-        builder.AppendLine($"\t\treader.ReadShort(MethodId);");
+        builder.AppendLine("\t\tpublic byte[] Serialize() {");
+        builder.AppendLine("\t\t\tvar writer = new BinWriter();");
+        builder.AppendLine($"\t\t\twriter.WriteShort(SourceClassId);");
+        builder.AppendLine($"\t\t\twriter.WriteShort(SourceMethodId);");
 
         FieldDef? prevField = null;
         for (var i = 0; i < method.Fields.Count; i++)
         {
             var field = method.Fields[i];
-            if (field.IsReserved)
+            var localDomain = DomainTypes.DomainToInternalTypeMap[field.Domain];
+            if (localDomain == "byte")
             {
-                continue;
+                var append = prevField != null && string.Equals(DomainTypes.DomainToInternalTypeMap[prevField.Domain], localDomain) ? "true" : "false";
+                
+                var j = 1;
+
+                while (true)
+                {
+                    if (i >= method.Fields.Count) break;
+                    
+                    var bitField = method.Fields[i];
+                    localDomain = DomainTypes.DomainToInternalTypeMap[bitField.Domain];
+                    append = prevField != null && string.Equals(DomainTypes.DomainToInternalTypeMap[prevField.Domain], localDomain) ? "true" : "false";
+                    if (localDomain != "byte")
+                    {
+                        i--;
+                        break;
+                    }
+
+                    builder.AppendLine($"\t\t\twriter.{DomainTypes.GetDomainWriterMethod(field.Domain)}((byte)({StrFormatUtils.ToPascalCase(bitField.Name)} ? {j} : 0), {append});");
+                    j <<= 1;
+                    i++;
+                    prevField = bitField;
+                }
+            }
+            else
+            {
+                builder.AppendLine($"\t\t\twriter.{DomainTypes.GetDomainWriterMethod(field.Domain)}({StrFormatUtils.ToPascalCase(field.Name)});");
             }
 
-            var localDomain = DomainTypes.GetDomainVisitor(field.Domain);
-            if (localDomain == "Bit")
+            prevField = field;
+        }
+
+        builder.AppendLine("\t\t\treturn writer.ToArray();");
+        builder.AppendLine("\t\t}");
+    }
+
+    private static void GenerateDeserializer(StringBuilder builder, MethodDef method)
+    {
+        builder.AppendLine("\t\tpublic void Deserialize(byte[] bytes) {");
+        builder.AppendLine("\t\t\tvar reader = new BinReader(bytes);");
+        builder.AppendLine($"\t\t\treader.ReadShort();");
+        builder.AppendLine($"\t\t\treader.ReadShort();");
+
+        FieldDef? prevField = null;
+        for (var i = 0; i < method.Fields.Count; i++)
+        {
+            var field = method.Fields[i];
+            // if (field.IsReserved)
+            // {
+            //     continue;
+            // }
+
+            var localDomain = DomainTypes.DomainToInternalTypeMap[field.Domain];
+
+            if (localDomain == "byte")
             {
-                builder.AppendLine($"\t\tvar flags = reader.Read{DomainUtils.ToPascalCase(field.Domain)}();");
+                builder.AppendLine($"\t\t\tvar flags = reader.ReadByte();");
 
                 var j = 1;
 
@@ -87,23 +108,23 @@ public class MethodGenerator
                     if (i >= method.Fields.Count) break;
 
                     var bitField = method.Fields[i];
-                    localDomain = DomainTypes.GetDomainVisitor(bitField.Domain);
-                    if (localDomain != "Bit")
+                    localDomain = DomainTypes.DomainToInternalTypeMap[bitField.Domain];
+                    if (localDomain != "byte")
                     {
                         i--;
                         break;
                     }
 
-                    builder.AppendLine($"\t\t{DomainUtils.ToPascalCase(bitField.Name)} = flags & {j} > 0;");
+                    builder.AppendLine($"\t\t\t{StrFormatUtils.ToPascalCase(bitField.Name)} = (flags & {j}) > 0;");
                     j <<= 1;
                     i++;
                 }
             }
             else
             {
-                builder.AppendLine($"\t\t{DomainUtils.ToPascalCase(field.Name)} = reader.Read{DomainTypes.GetDomainVisitor(field.Domain)}();");
+                builder.AppendLine($"\t\t\t{StrFormatUtils.ToPascalCase(field.Name)} = reader.{DomainTypes.GetDomainReaderMethod(field.Domain)}();");
             }
         }
-        builder.AppendLine("\t}");
+        builder.AppendLine("\t\t}");
     }
 }

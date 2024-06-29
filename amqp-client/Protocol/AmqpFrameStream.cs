@@ -23,6 +23,10 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
 
     public Task SendFrameAsync(AmqpFrame frame)
     {
+        if (frame is AmqpMethodFrame metw)
+        {
+
+        }
         return SendRawAsync(frame.ToBytes());
     }
 
@@ -76,6 +80,7 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
         var decodedMethod = (Method)genericMethod.Invoke(null, [_frameBody])!;
         var methodFrame = new AmqpMethodFrame(channel, decodedMethod);
 
+
         if (decodedMethod.HasBody())
         {
             if (!_partialFrames.ContainsKey(channel)) _partialFrames[channel] = new Queue<AmqpMethodFrame>();
@@ -90,10 +95,10 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
     private AmqpHeaderFrame? HandleContentHeaderFrame(short channel)
     {
         using var reader = new BinReader(_frameBody);
-        var classId = reader.ReadInt16();
+        var classId = reader.ReadShort();
         // Weight - reserved, ignore
-        reader.ReadInt16();
-        var bodyLength = reader.ReadInt64();
+        reader.ReadShort();
+        var bodyLength = reader.ReadLong();
         var propsList = reader.ReadProperties();
         var lastPending = _partialFrames[channel].Peek();
         lastPending.BodyLength = bodyLength;

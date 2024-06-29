@@ -22,8 +22,8 @@ public class AmqpFrame
     {
         var writer = new BinWriter();
         writer.Write((byte)Type);
-        writer.Write(Channel);
-        writer.Write(Payload.Length);
+        writer.WriteShort(Channel);
+        writer.WriteInt(Payload.Length);
         writer.Write(Payload);
         writer.Write((byte)0xCE);
 
@@ -48,9 +48,9 @@ public class AmqpMethodFrame : AmqpFrame
     {
         var writer = new BinWriter();
         writer.Write((byte)Type);
-        writer.Write(Channel);
+        writer.WriteShort(Channel);
         var payload = Encoder.MarshalMethodFrame(Method);
-        writer.Write(payload.Length);
+        writer.WriteInt(payload.Length);
         writer.Write(payload);
         writer.Write((byte)0xCE);
 

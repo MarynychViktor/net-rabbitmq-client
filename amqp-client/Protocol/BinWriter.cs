@@ -22,7 +22,7 @@ public class BinWriter : BinaryWriter
         foreach (var (k, v) in table) tableWriter.WriteFieldValuePair(k, v);
 
         var fieldTable = ((MemoryStream)tableWriter.OutStream).ToArray();
-        Write((uint)fieldTable.Length);
+        WriteUint((uint)fieldTable.Length);
         Write(fieldTable);
     }
 
@@ -42,7 +42,7 @@ public class BinWriter : BinaryWriter
     public void WriteLongStr(string s)
     {
         var bytes = Encoding.ASCII.GetBytes(s);
-        Write((uint)bytes.Length);
+        WriteUint((uint)bytes.Length);
         Write(bytes);
     }
 
@@ -60,35 +60,35 @@ public class BinWriter : BinaryWriter
                 break;
             case short i:
                 Write('U');
-                Write(i);
+                WriteShort(i);
                 break;
             case ushort i:
                 Write('u');
-                Write(i);
+                WriteUshort(i);
                 break;
             case int i:
                 Write('I');
-                Write(i);
+                WriteInt(i);
                 break;
             case uint i:
                 Write('i');
-                Write(i);
+                WriteUint(i);
                 break;
             case long i:
                 Write('L');
-                Write(i);
+                WriteLong(i);
                 break;
             case ulong i:
                 Write('l');
-                Write(i);
+                WriteUlong(i);
                 break;
             case float i:
                 Write('f');
-                Write(i);
+                WriteFloat(i);
                 break;
             case double i:
                 Write('d');
-                Write(i);
+                WriteDouble(i);
                 break;
             case string s:
                 Write('S');
@@ -103,42 +103,42 @@ public class BinWriter : BinaryWriter
         }
     }
 
-    public override void Write(short value)
+    public void WriteShort(short value)
     {
         WriteInBigEndian(BitConverter.GetBytes(value));
     }
 
-    public override void Write(ushort value)
+    public void WriteUshort(ushort value)
     {
         WriteInBigEndian(BitConverter.GetBytes(value));
     }
 
-    public override void Write(int value)
+    public void WriteInt(int value)
     {
         WriteInBigEndian(BitConverter.GetBytes(value));
     }
 
-    public override void Write(uint value)
+    public void WriteUint(uint value)
     {
         WriteInBigEndian(BitConverter.GetBytes(value));
     }
 
-    public override void Write(long value)
+    public void WriteLong(long value)
     {
         WriteInBigEndian(BitConverter.GetBytes(value));
     }
 
-    public override void Write(ulong value)
+    public void WriteUlong(ulong value)
     {
         WriteInBigEndian(BitConverter.GetBytes(value));
     }
 
-    public override void Write(float value)
+    public void WriteFloat(float value)
     {
         WriteInBigEndian(BitConverter.GetBytes(value));
     }
 
-    public override void Write(double value)
+    public void WriteDouble(double value)
     {
         WriteInBigEndian(BitConverter.GetBytes(value));
     }
