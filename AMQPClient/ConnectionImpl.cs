@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Threading.Channels;
 using AMQPClient.Protocol;
@@ -61,7 +62,19 @@ public class ConnectionImpl : IConnection
     private AmqpFrameService CreateStreamReader()
     {
         var tcpClient = new TcpClient(_params.Host, _params.Port);
-        var reader = new AmqpFrameService(tcpClient.GetStream());
+        var stream = tcpClient.GetStream();
+        AmqpFrameService reader;
+
+        if (_params.UseTls)
+        {
+            var sslStream = new SslStream(stream);
+            sslStream.AuthenticateAsClient(_params.Host);
+            reader = new AmqpFrameService(sslStream);
+        }
+        else
+        {
+            reader = new AmqpFrameService(stream);
+        }
 
         reader.FrameSent += () => _pingPongService!.LastFrameSent = DateTimeOffset.Now.ToUnixTimeSeconds();
         reader.FrameReceived += () => _pingPongService!.LastFrameReceived = DateTimeOffset.Now.ToUnixTimeSeconds();
