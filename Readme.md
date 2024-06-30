@@ -50,8 +50,7 @@ if (message != null) {
 
 ## Currently implemented features
 **1. Connection** ✅
-Connection creation with basic set of options 
-> TODO: add support for auth mechanism selection, TLS, advanced connections options
+> TODO: add support for advanced connection options
 
 **2. Channel** ✅
 
