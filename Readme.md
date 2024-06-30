@@ -1,5 +1,7 @@
 # RabbitMQ client
 The client was built around AMQP 0-9-1 protocol and provides all necessary methods to work with the RabbitMQ server.
+> [!NOTE]  
+> The main idea behind this project is to dive into the protocol and write a client from scratch that could read/write binary chunks of data, interpret them according to the AMQP-0-9-1 protocol rules, and communicate with a real RabbitMQ server.
 
 ## Usage
 ### 1. Set-up connection and channel
