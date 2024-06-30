@@ -66,15 +66,18 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         await CallMethodAsync<Exchange.DeleteOk>(method);
     }
 
-    // TODO: declare args
-    public async Task<string> QueueDeclare(string name = "")
+    public async Task<string> QueueDeclareAsync(string name = "", bool passive = true, bool durable = false,
+        bool exclusive = false, bool autoDelete = false, bool noWait = false, Dictionary<string, object>? args = null)
     {
-        var args = new Dictionary<string, object>();
         var method = new Queue.Declare()
         {
             Queue = name,
-            Arguments = args,
-            Durable = true,
+            Passive = false,
+            Durable = durable,
+            Exclusive = exclusive,
+            AutoDelete = autoDelete,
+            NoWait = noWait,
+            Arguments = args ?? new(),
         };
 
         var result = await CallMethodAsync<Queue.DeclareOk>(method);
