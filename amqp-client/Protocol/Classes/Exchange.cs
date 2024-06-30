@@ -1,6 +1,6 @@
-namespace AMQPClient.Protocol.Method2;
+namespace AMQPClient.Protocol.Classes;
 
-public class Exchange {
+public static class Exchange {
 	public class Declare : IFrameMethod {
 		public short SourceClassId => 40;
 		public short SourceMethodId => 10;

@@ -1,6 +1,6 @@
-namespace AMQPClient.Protocol.Method2;
+namespace AMQPClient.Protocol.Classes;
 
-public class Basic {
+public static class Basic {
 	public class Qos : IFrameMethod {
 		public short SourceClassId => 60;
 		public short SourceMethodId => 10;

@@ -1,6 +1,5 @@
 using System.Threading.Channels;
 using AMQPClient.Protocol;
-using AMQPClient.Protocol.Methods.Connection;
 using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;
@@ -14,8 +13,8 @@ internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameS
 
     public async Task CloseConnection()
     {
-        var method = new Protocol.Method2.Connection.Close();
-        await CallMethodAsync<Protocol.Method2.Connection.CloseOk>(method, checkForClosed: false);
+        var method = new Protocol.Classes.Connection.Close();
+        await CallMethodAsync<Protocol.Classes.Connection.CloseOk>(method, checkForClosed: false);
         await _listenerCancellationSource.CancelAsync();
         await connection.CloseAsync();
     }
@@ -53,7 +52,7 @@ internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameS
 
                             switch (frame.Method)
                             {
-                                case ConnectionClose closeMethod:
+                                case Protocol.Classes.Connection.Close closeMethod:
                                     Logger.LogCritical("Closing connection\n {code}, {text} ", closeMethod.ReplyCode, closeMethod.ReplyText);
                                     var result = new MethodResult(null, closeMethod.ReplyCode, closeMethod.ReplyText);
                                     
@@ -64,7 +63,7 @@ internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameS
 
                                     LastErrorResult = result;
                                     State = ChannelState.Failed;
-                                    await CallMethodAsync(new Protocol.Method2.Connection.CloseOk());
+                                    await CallMethodAsync(new Protocol.Classes.Connection.CloseOk());
                                     await connection.CloseAsync();
                                     break;
                                 default:

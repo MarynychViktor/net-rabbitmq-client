@@ -1,6 +1,6 @@
-namespace AMQPClient.Protocol.Method2;
+namespace AMQPClient.Protocol.Classes;
 
-public class Connection {
+public static class Connection {
 	public class Start : IFrameMethod {
 		public short SourceClassId => 10;
 		public short SourceMethodId => 10;

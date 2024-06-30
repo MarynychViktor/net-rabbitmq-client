@@ -1,6 +1,6 @@
-namespace AMQPClient.Protocol.Method2;
+namespace AMQPClient.Protocol.Classes;
 
-public class Queue {
+public static class Queue {
 	public class Declare : IFrameMethod {
 		public short SourceClassId => 50;
 		public short SourceMethodId => 10;

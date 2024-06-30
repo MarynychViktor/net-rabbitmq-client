@@ -1,5 +1,4 @@
 using System.Buffers.Binary;
-using AMQPClient.Protocol.Methods;
 using Microsoft.Extensions.Logging;
 
 namespace AMQPClient.Protocol;
@@ -71,32 +70,20 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
     {
         var classId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[..2]);
         var methodId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[2..4]);
-        var methodInfo = typeof(Decoder).GetMethod("CreateMethodFrame")!;
-        try
+        var methodType = MethodTypeHelper.GetMethodType2(classId, methodId);
+        var instance = (IFrameMethod)(Activator.CreateInstance(methodType)!);
+        instance.Deserialize(_frameBody);
+        var methodFrame = new AmqpMethodFrame(channel, instance);
+
+        if (instance.HasBody)
         {
-            var tp = MethodTypeHelper.GetMethodType2(classId, methodId);
-            var instance = (IFrameMethod)(Activator.CreateInstance(tp)!);
-            instance.Deserialize(_frameBody);
-            // var genericMethod = methodInfo.MakeGenericMethod(MethodTypeHelper.GetMethodType2(classId, methodId));
-            // var decodedMethod = (Method)genericMethod.Invoke(null, [_frameBody])!;
-            var methodFrame = new AmqpMethodFrame(channel, instance);
+            if (!_partialFrames.ContainsKey(channel)) _partialFrames[channel] = new Queue<AmqpMethodFrame>();
 
-            if (instance.HasBody)
-            {
-                if (!_partialFrames.ContainsKey(channel)) _partialFrames[channel] = new Queue<AmqpMethodFrame>();
-
-                _partialFrames[channel].Enqueue(methodFrame);
-                return null;
-            }
-
-            return methodFrame;
-
+            _partialFrames[channel].Enqueue(methodFrame);
+            return null;
         }
-        catch (Exception e)
-        {
-            var a = 12;
-            throw;
-        }
+
+        return methodFrame;
     }
 
     private AmqpHeaderFrame? HandleContentHeaderFrame(short channel)

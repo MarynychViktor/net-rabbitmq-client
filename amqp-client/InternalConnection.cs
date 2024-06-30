@@ -2,8 +2,6 @@ using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Threading.Channels;
 using AMQPClient.Protocol;
-using AMQPClient.Protocol.Methods;
-using AMQPClient.Protocol.Methods.Connection;
 using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;
@@ -98,7 +96,7 @@ public class InternalConnection
         await ReadNextMethodFrame();
 
         // FIXME: review with dynamic params
-        var startOkMethod = new Protocol.Method2.Connection.StartOk()
+        var startOkMethod = new Protocol.Classes.Connection.StartOk()
         {
             ClientProperties = new Dictionary<string, object>
             {
@@ -114,10 +112,10 @@ public class InternalConnection
         await WriteMethodFrameAsync(startOkMethod);
 
         var nextFrame = await ReadNextMethodFrame();
-        var tuneMethod = (Protocol.Method2.Connection.Tune)nextFrame.Method;
+        var tuneMethod = (Protocol.Classes.Connection.Tune)nextFrame.Method;
 
         // TODO: dynamic values for channelMax and frameMax
-        var tuneOkMethod = new Protocol.Method2.Connection.TuneOk()
+        var tuneOkMethod = new Protocol.Classes.Connection.TuneOk()
         {
             ChannelMax = tuneMethod.ChannelMax,
             Heartbeat = _params.HeartbeatInterval,
@@ -125,7 +123,7 @@ public class InternalConnection
         };
         await WriteMethodFrameAsync(tuneOkMethod);
 
-        var openMethod = new Protocol.Method2.Connection.Open()
+        var openMethod = new Protocol.Classes.Connection.Open()
         {
             VirtualHost = _params.Vhost
         };

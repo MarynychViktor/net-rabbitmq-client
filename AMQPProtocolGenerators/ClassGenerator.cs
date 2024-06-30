@@ -7,9 +7,9 @@ public static class ClassGenerator
     public static void GenerateDefinition(ClassDef klass, string path)
     {
         var builder = new StringBuilder();
-        builder.AppendLine("namespace AMQPClient.Protocol.Method2;");
+        builder.AppendLine("namespace AMQPClient.Protocol.Classes;");
         builder.AppendLine();
-        builder.AppendLine($"public class {StrFormatUtils.ToPascalCase(klass.Name)} {{");
+        builder.AppendLine($"public static class {StrFormatUtils.ToPascalCase(klass.Name)} {{");
 
         foreach (var method in klass.Methods)
         {

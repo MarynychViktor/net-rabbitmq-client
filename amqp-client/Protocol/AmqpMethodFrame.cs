@@ -1,5 +1,3 @@
-using AMQPClient.Protocol.Methods;
-
 namespace AMQPClient.Protocol;
 
 public class AmqpFrame

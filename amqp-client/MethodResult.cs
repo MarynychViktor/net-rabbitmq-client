@@ -1,5 +1,4 @@
 using AMQPClient.Protocol;
-using AMQPClient.Protocol.Methods;
 
 namespace AMQPClient;
 

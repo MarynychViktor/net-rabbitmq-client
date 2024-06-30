@@ -1,12 +1,8 @@
 using System.Threading.Channels;
 using AMQPClient.Protocol;
-using AMQPClient.Protocol.Method2;
-using AMQPClient.Protocol.Methods.Basic;
-using AMQPClient.Protocol.Methods.Channels;
-using AMQPClient.Protocol.Methods.Exchanges;
-using AMQPClient.Protocol.Methods.Queues;
+using AMQPClient.Protocol.Classes;
 using Microsoft.Extensions.Logging;
-using Channel = AMQPClient.Protocol.Method2.Channel;
+using Channel = AMQPClient.Protocol.Classes.Channel;
 
 namespace AMQPClient;
 
@@ -280,7 +276,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
     {
         _listenerCancellationSource = new CancellationTokenSource();
         StartListener(_listenerCancellationSource.Token);
-        await CallMethodAsync<Protocol.Method2.Channel.OpenOk>(new Protocol.Method2.Channel.Open());
+        await CallMethodAsync<Channel.OpenOk>(new Channel.Open());
     }
 
     private void StartListener(CancellationToken cancellationToken = default)

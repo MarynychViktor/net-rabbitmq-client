@@ -1,7 +1,5 @@
 using System.Collections.Concurrent;
 using AMQPClient.Protocol;
-using AMQPClient.Protocol.Method2;
-using AMQPClient.Protocol.Methods;
 namespace AMQPClient;
 
 internal abstract class ChannelBase
