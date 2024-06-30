@@ -14,7 +14,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
     private ILogger<ChannelImpl> Logger { get; } = DefaultLoggerFactory.CreateLogger<ChannelImpl>();
     private CancellationTokenSource _listenerCancellationSource;
 
-    public async Task ExchangeDeclare(string name, bool passive = false, bool durable = false, bool autoDelete = false,
+    public async Task ExchangeDeclareAsync(string name, bool passive = false, bool durable = false, bool autoDelete = false,
         bool internalOnly = false, bool nowait = false, string type = "direct")
     {
         var method = new Exchange.Declare()
@@ -48,7 +48,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         await CallMethodAsync<Channel.FlowOk>(method);
     }
 
-    public async Task Close()
+    public async Task CloseAsync()
     {
         var method = new Channel.Close();
         State = ChannelState.Closed;
@@ -56,7 +56,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         await _listenerCancellationSource.CancelAsync();
     }
 
-    public async Task ExchangeDelete(string name)
+    public async Task ExchangeDeleteAsync(string name)
     {
         var method = new Exchange.Delete()
         {
@@ -84,7 +84,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         return result.Queue;
     }
 
-    public async Task QueueBind(string queue, string exchange, string routingKey)
+    public async Task QueueBindAsync(string queue, string exchange, string routingKey)
     {
         var method = new Queue.Bind()
         {
@@ -96,7 +96,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         await CallMethodAsync<Queue.BindOk>(method);
     }
 
-    public async Task QueueUnbind(string queue, string exchange, string routingKey, Dictionary<string, object>? arguments = null)
+    public async Task QueueUnbindAsync(string queue, string exchange, string routingKey, Dictionary<string, object>? arguments = null)
     {
         var method = new Queue.Unbind()
         {
@@ -108,7 +108,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         await CallMethodAsync<Queue.UnbindOk>(method);
     }
 
-    public async Task QueuePurge(string queue, bool noWait = false)
+    public async Task QueuePurgeAsync(string queue, bool noWait = false)
     {
         var method = new Queue.Purge()
         {
@@ -120,7 +120,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
     }
 
     // TODO: add precondition errors handling
-    public async Task QueueDelete(string queue, bool ifUnused = false, bool ifEmpty = false, bool noWait = false)
+    public async Task QueueDeleteAsync(string queue, bool ifUnused = false, bool ifEmpty = false, bool noWait = false)
     {
         var method = new Queue.Delete()
         {
@@ -140,7 +140,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         }
     }
 
-    public async Task<string> BasicConsume(string queue, Action<IMessage> consumer)
+    public async Task<string> BasicConsumeAsync(string queue, Action<IMessage> consumer)
     {
         var method = new Basic.Consume()
         {
@@ -156,7 +156,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         return response.ConsumerTag;
     }
 
-    public async Task BasicCancel(string consumerTag, bool noWait = false)
+    public async Task BasicCancelAsync(string consumerTag, bool noWait = false)
     {
         var method = new Basic.Cancel()
         {
@@ -187,7 +187,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         await CallMethodAsync(method, message.Properties ?? new HeaderProperties(), message.Content);
     }
 
-    public async Task BasicAck(IMessage message)
+    public async Task BasicAckAsync(IMessage message)
     {
         if (message.DeliveryTag is {} deliveryTag)
         {
@@ -206,7 +206,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         throw new NotImplementedException();
     }
 
-    public async Task BasicReject(IMessage message, bool requeue = false)
+    public async Task BasicRejectAsync(IMessage message, bool requeue = false)
     {
         if (message.DeliveryTag is {} deliveryTag)
         {
@@ -224,7 +224,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         throw new NotImplementedException();
     }
 
-    public async Task BasicRecover()
+    public async Task BasicRecoverAsync()
     {
         // Recovery with requeue=false is not supported.
         // https://www.rabbitmq.com/docs/specification
@@ -235,7 +235,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         await CallMethodAsync<Basic.RecoverOk>(method);
     }
 
-    public async Task BasicQos(short prefetchCount, bool global = false)
+    public async Task BasicQosAsync(short prefetchCount, bool global = false)
     {
         var method = new Basic.Qos()
         {
@@ -249,7 +249,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         await CallMethodAsync<Basic.QosOk>(method);
     }
 
-    public async Task<IMessage?> BasicGet(string queue, bool noAck = false)
+    public async Task<IMessage?> BasicGetAsync(string queue, bool noAck = false)
     {
         var method = new Basic.Get()
         {
