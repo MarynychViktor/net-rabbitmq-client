@@ -48,6 +48,7 @@ public class ConnectionImpl : IConnection
 
     public async Task CloseAsync()
     {
+        await SystemChannel.CloseConnectionAsync();
         await _listenersCancellationSource.CancelAsync();
         await _amqpFrameStream!.DisposeAsync();
         _amqpFrameStream = null;

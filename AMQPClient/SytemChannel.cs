@@ -11,12 +11,15 @@ internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameS
     private ILogger<SystemChannel> Logger { get; } = DefaultLoggerFactory.CreateLogger<SystemChannel>();
     private CancellationTokenSource _listenerCancellationSource;
 
-    public async Task CloseConnection()
+    public async Task CloseConnectionAsync()
     {
-        var method = new Protocol.Classes.Connection.Close();
+        var method = new Protocol.Classes.Connection.Close()
+        {
+            ReplyCode = 320,
+            ReplyText = "Closed by peer"
+        };
         await CallMethodAsync<Protocol.Classes.Connection.CloseOk>(method, checkForClosed: false);
         await _listenerCancellationSource.CancelAsync();
-        await connectionImpl.CloseAsync();
     }
 
     internal void StartListener()

@@ -50,7 +50,11 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
 
     public async Task CloseAsync()
     {
-        var method = new Channel.Close();
+        var method = new Channel.Close()
+        {
+            ReplyCode = 320,
+            ReplyText = "Closed by peer"
+        };
         State = ChannelState.Closed;
         await CallMethodAsync<Channel.CloseOk>(method, checkForClosed: false);
         await _listenerCancellationSource.CancelAsync();
