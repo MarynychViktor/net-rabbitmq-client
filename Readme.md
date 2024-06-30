@@ -1,8 +1,8 @@
-## RabbitMQ client
+# RabbitMQ client
 The client was built around AMQP 0-9-1 protocol and provides all necessary methods to work with the RabbitMQ server.
 
-### Usage example
-#### Create connection
+## Usage
+### 1. Set-up connection and channel
 ```c#
 var connectionFactory = new ConnectionFactory();
 var connection = await connectionFactory.CreateConnectionAsync(options =>
@@ -13,40 +13,42 @@ var connection = await connectionFactory.CreateConnectionAsync(options =>
     options.User = "bar";
     options.Password = "secret";
 });
-```
-#### Create channel
-```c#
 var channel = await connection.CreateChannelAsync();
-
-// Do something with channel
-
-await channel.Close();
 ```
-#### Declare exchange and bind queue
+### 2. Declare exchange, queue and bind them
 ```c#
-var exchangeName = "foo-exchange";
-var routingKey = "foo-bar-key";
+var exchangeName = "my-exchange";
+var routingKey = "some-key";
 
-var queueName = await channel.QueueDeclare();
-
+var queueName = await channel.QueueDeclare("my-queue", durable: true);
 await channel.ExchangeDeclare(exchangeName);
 
 await channel.QueueBind(queueName, exchangeName, routingKey);
 ```
-#### Publish message
+### 3. Publish message
 ```c#
 await channel.BasicPublishAsync(exchangeName, routingKey, new Message("Hello from app!"u8.ToArray()));
 ```
-#### Consume message
+### 4. Consume message
+#### Using async consumer
 ```c#
 await channel.BasicConsume(queueName, async (message) =>
 {
-  Console.WriteLine($"Received message {Encoding.Default.GetString(message.Payload.Content)}");
+  Console.WriteLine($"Message: {Encoding.Default.GetString(message.Payload.Content)}");
   await channel.BasicAck(message);
 });
 ```
+#### Manual consuming
+```c#
+var message = await channel.BasicGet(queueName);
 
-### Implemented features
+if (message != null) {
+    Console.WriteLine($"Message: {Encoding.Default.GetString(message.Payload.Content)}");
+    await channel.BasicAck(message);
+}
+```
+
+## Currently implemented features
 **1. Connection** ✅
 Connection creation with basic set of options 
 > TODO: add support for auth mechanism selection, TLS, advanced connections options
