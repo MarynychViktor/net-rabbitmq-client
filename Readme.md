@@ -58,23 +58,10 @@ if (message != null) {
 
 **4. Queue** ✅
 
-**5. Basic** ❌
+**5. Basic** ✅
 
-Some advanced methods not implemented
-- [x] Implemented methods
-  - Consume
-  - Publish
-  - Deliver
-  - Ack
-  - Reject
-  - Recover
-  - Qos
-  - Get
+**6. Tx**
 
-- [ ] TODO:
-  - Nack
-  - Return
-
-**6. Tx** - Not implemented
+Not implemented
 
 
