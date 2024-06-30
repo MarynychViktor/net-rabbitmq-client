@@ -17,7 +17,7 @@ public class PingPongWatcher
         get => _lastFrameReceived;
         set => Interlocked.Exchange(ref _lastFrameReceived, value);
     }
-    private ILogger<InternalConnection> _logger = DefaultLoggerFactory.CreateLogger<InternalConnection>();
+    private ILogger<ConnectionImpl> _logger = DefaultLoggerFactory.CreateLogger<ConnectionImpl>();
     private readonly IAmqpFrameSender _frameSender;
 
     public PingPongWatcher(IAmqpFrameSender frameSender)

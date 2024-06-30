@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;
 
-internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameSender, InternalConnection connection)
+internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameSender, ConnectionImpl connectionImpl)
     : ChannelBase(frameSender, 0)
 {
     private ChannelReader<object> RxChannel => trxChannel.Reader;
@@ -16,7 +16,7 @@ internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameS
         var method = new Protocol.Classes.Connection.Close();
         await CallMethodAsync<Protocol.Classes.Connection.CloseOk>(method, checkForClosed: false);
         await _listenerCancellationSource.CancelAsync();
-        await connection.CloseAsync();
+        await connectionImpl.CloseAsync();
     }
 
     internal void StartListener()
@@ -64,7 +64,7 @@ internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameS
                                     LastErrorResult = result;
                                     State = ChannelState.Failed;
                                     await CallMethodAsync(new Protocol.Classes.Connection.CloseOk());
-                                    await connection.CloseAsync();
+                                    await connectionImpl.CloseAsync();
                                     break;
                                 default:
                                     throw new NotImplementedException();

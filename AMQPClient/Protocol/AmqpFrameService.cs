@@ -11,7 +11,7 @@ public class AmqpFrameService : IAmqpFrameSender, IDisposable, IAsyncDisposable
     private byte[] _frameBody;
     public event Action FrameSent;
     public event Action FrameReceived;
-    private ILogger<InternalConnection> _logger = DefaultLoggerFactory.CreateLogger<InternalConnection>();
+    private ILogger<ConnectionImpl> _logger = DefaultLoggerFactory.CreateLogger<ConnectionImpl>();
 
     private readonly Dictionary<short, Queue<AmqpMethodFrame>> _partialFrames = new();
 

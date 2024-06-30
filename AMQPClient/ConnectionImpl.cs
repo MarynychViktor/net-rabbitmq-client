@@ -8,20 +8,20 @@ namespace AMQPClient;
 
 // FIXME: handle errors
 // FIXME: stop all channels on connection close
-public class InternalConnection
+public class ConnectionImpl : IConnection
 {
     private readonly ConnectionParams _params;
     private AmqpFrameService? _amqpFrameStream;
     private CancellationTokenSource _listenersCancellationSource;
     private readonly ChannelIdGenerator _channelIdGenerator;
     private PingPongWatcher? _pingPongService;
-    private readonly ILogger<InternalConnection> _logger = DefaultLoggerFactory.CreateLogger<InternalConnection>();
+    private readonly ILogger<ConnectionImpl> _logger = DefaultLoggerFactory.CreateLogger<ConnectionImpl>();
 
     private readonly ConcurrentDictionary<short, ChannelWriter<object>> _channelWriters = new();
     internal SystemChannel SystemChannel { get; set; }
     internal event Func<Task> OnConnectionClosed;
 
-    public InternalConnection(ConnectionParams @params)
+    public ConnectionImpl(ConnectionParams @params)
     {
         _params = @params;
         _channelIdGenerator = new ChannelIdGenerator();
@@ -134,7 +134,7 @@ public class InternalConnection
         _logger.LogDebug("Handshake completed");
     }
 
-    public async Task<IChannel> OpenChannelAsync()
+    public async Task<IChannel> CreateChannelAsync()
     {
         var channel = CreateChannel();
         await channel.OpenAsync();
