@@ -69,10 +69,12 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
     // TODO: declare args
     public async Task<string> QueueDeclare(string name = "")
     {
+        var args = new Dictionary<string, object>();
         var method = new Queue.Declare()
         {
             Queue = name,
-            Arguments = new(),
+            Arguments = args,
+            Durable = true,
         };
 
         var result = await CallMethodAsync<Queue.DeclareOk>(method);

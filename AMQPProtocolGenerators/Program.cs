@@ -36,12 +36,15 @@ foreach (var node in root)
                     {
                         var methodId = methodNode.Attributes["index"]!.Value;
                         var methodName = methodNode.Attributes["name"]!.Value;
-                        var response = methodNode.SelectSingleNode("response");
+                        var responses = methodNode.SelectNodes("response");
 
-                        if (response != null)
+                        if (responses.Count > 0)
                         {
-                            Console.WriteLine($"\tResponse {response.Attributes["name"].Value}");
-                            asyncResponsesMap[response.Attributes["name"]!.Value] = true;
+                            foreach (XmlElement response in responses)
+                            {
+                                Console.WriteLine($"\tResponse {response.Attributes["name"].Value}");
+                                asyncResponsesMap[response.Attributes["name"]!.Value] = true;
+                            }
                             asyncResponsesMap[methodName] = false;
                         }
 
