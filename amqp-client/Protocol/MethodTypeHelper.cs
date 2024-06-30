@@ -4,7 +4,7 @@ namespace AMQPClient.Protocol;
 
 public static class MethodTypeHelper
 {
-    private static readonly Dictionary<short, Dictionary<short, Type>> ClassMethodTypeMap2 = new()
+    private static readonly Dictionary<short, Dictionary<short, Type>> ClassMethodTypeMap = new()
     {
         {
             10,
@@ -73,8 +73,8 @@ public static class MethodTypeHelper
             }
         }
     };
-    public static Type GetMethodType2(short classId, short methodId)
+    public static Type GetMethodType(short classId, short methodId)
     {
-        return ClassMethodTypeMap2[classId][methodId];
+        return ClassMethodTypeMap[classId][methodId];
     }
 }

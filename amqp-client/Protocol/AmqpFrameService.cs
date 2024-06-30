@@ -3,7 +3,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AMQPClient.Protocol;
 
-public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
+public class AmqpFrameService : IAmqpFrameSender, IDisposable, IAsyncDisposable
 {
     private const byte FrameHeaderSize = 7;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
@@ -15,7 +15,7 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
 
     private readonly Dictionary<short, Queue<AmqpMethodFrame>> _partialFrames = new();
 
-    public AmqpFrameStream(Stream sourceStream)
+    public AmqpFrameService(Stream sourceStream)
     {
         _sourceStream = sourceStream;
     }
@@ -70,7 +70,7 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
     {
         var classId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[..2]);
         var methodId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[2..4]);
-        var methodType = MethodTypeHelper.GetMethodType2(classId, methodId);
+        var methodType = MethodTypeHelper.GetMethodType(classId, methodId);
         var instance = (IFrameMethod)(Activator.CreateInstance(methodType)!);
         instance.Deserialize(_frameBody);
         var methodFrame = new AmqpMethodFrame(channel, instance);

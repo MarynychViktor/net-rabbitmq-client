@@ -11,7 +11,7 @@ namespace AMQPClient;
 public class InternalConnection
 {
     private readonly ConnectionParams _params;
-    private AmqpFrameStream? _amqpFrameStream;
+    private AmqpFrameService? _amqpFrameStream;
     private CancellationTokenSource _listenersCancellationSource;
     private readonly ChannelIdGenerator _channelIdGenerator;
     private PingPongWatcher? _pingPongService;
@@ -58,10 +58,10 @@ public class InternalConnection
         Task.Run(async () => await _pingPongService!.StartAsync(cancellationToken), cancellationToken);
     }
 
-    private AmqpFrameStream CreateStreamReader()
+    private AmqpFrameService CreateStreamReader()
     {
         var tcpClient = new TcpClient(_params.Host, _params.Port);
-        var reader = new AmqpFrameStream(tcpClient.GetStream());
+        var reader = new AmqpFrameService(tcpClient.GetStream());
 
         reader.FrameSent += () => _pingPongService!.LastFrameSent = DateTimeOffset.Now.ToUnixTimeSeconds();
         reader.FrameReceived += () => _pingPongService!.LastFrameReceived = DateTimeOffset.Now.ToUnixTimeSeconds();

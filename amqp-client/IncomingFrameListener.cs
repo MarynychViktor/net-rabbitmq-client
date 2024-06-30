@@ -7,16 +7,16 @@ namespace AMQPClient;
 // FIXME: handle errors
 public class IncomingFrameListener
 {
-    private readonly AmqpFrameStream _amqpFrameStream;
+    private readonly AmqpFrameService _amqpFrameService;
     private readonly IReadOnlyDictionary<short, ChannelWriter<object>> _channelWriters;
     private AmqpFrame? _frame;
 
     public IncomingFrameListener(
-        AmqpFrameStream amqpFrameStream,
+        AmqpFrameService amqpFrameService,
         IReadOnlyDictionary<short, ChannelWriter<object>> channelWriters
     )
     {
-        _amqpFrameStream = amqpFrameStream;
+        _amqpFrameService = amqpFrameService;
         _channelWriters = channelWriters;
     }
 
@@ -31,7 +31,7 @@ public class IncomingFrameListener
                 if (cancellationToken.IsCancellationRequested) return;
 
                 Logger.LogDebug("Waiting for next frame");
-                _frame = await _amqpFrameStream.ReadFrameAsync(cancellationToken);
+                _frame = await _amqpFrameService.ReadFrameAsync(cancellationToken);
 
                 // Handle incomplete frames
                 if (_frame == null) continue;

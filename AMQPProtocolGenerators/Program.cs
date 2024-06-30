@@ -73,7 +73,9 @@ foreach (var node in root)
     }
 }
 
+var version = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds();
+
 foreach (var klass in classes)
 {
-    ClassGenerator.GenerateDefinition(klass, args[0]);
+    ClassGenerator.GenerateDefinition(klass, args[0], version);
 }

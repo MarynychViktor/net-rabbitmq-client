@@ -17,13 +17,6 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
     public async Task ExchangeDeclare(string name, bool passive = false, bool durable = false, bool autoDelete = false,
         bool internalOnly = false, bool nowait = false, string type = "direct")
     {
-        // var flags = ExchangeDeclareFlags.None;
-        // if (passive) flags |= ExchangeDeclareFlags.Passive;
-        // if (durable) flags |= ExchangeDeclareFlags.Durable;
-        // if (autoDelete) flags |= ExchangeDeclareFlags.AutoDelete;
-        // if (internalOnly) flags |= ExchangeDeclareFlags.Internal;
-        // if (nowait) flags |= ExchangeDeclareFlags.NoWait;
-
         var method = new Exchange.Declare()
         {
             Exchange = name,
