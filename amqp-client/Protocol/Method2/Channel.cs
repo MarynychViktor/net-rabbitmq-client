@@ -2,14 +2,12 @@ namespace AMQPClient.Protocol.Method2;
 
 public class Channel {
 	public class Open : IFrameMethod {
-		private const short _sourceClassId = 20;
-		private const short _sourceMethodId = 10;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 20;
+		public short SourceMethodId => 10;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
-		public string Reserved1 { get; set; }
+		public string Reserved1 { get; set; }= "";
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -28,14 +26,12 @@ public class Channel {
 	}
 
 	public class OpenOk : IFrameMethod {
-		private const short _sourceClassId = 20;
-		private const short _sourceMethodId = 11;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 20;
+		public short SourceMethodId => 11;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
-		public string Reserved1 { get; set; }
+		public string Reserved1 { get; set; }= "";
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -54,12 +50,10 @@ public class Channel {
 	}
 
 	public class Flow : IFrameMethod {
-		private const short _sourceClassId = 20;
-		private const short _sourceMethodId = 20;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 20;
+		public short SourceMethodId => 20;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public bool Active { get; set; }
 
@@ -81,12 +75,10 @@ public class Channel {
 	}
 
 	public class FlowOk : IFrameMethod {
-		private const short _sourceClassId = 20;
-		private const short _sourceMethodId = 21;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 20;
+		public short SourceMethodId => 21;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public bool Active { get; set; }
 
@@ -108,12 +100,10 @@ public class Channel {
 	}
 
 	public class Close : IFrameMethod {
-		private const short _sourceClassId = 20;
-		private const short _sourceMethodId = 40;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 20;
+		public short SourceMethodId => 40;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public short ReplyCode { get; set; }
 		public string ReplyText { get; set; }
@@ -143,12 +133,10 @@ public class Channel {
 	}
 
 	public class CloseOk : IFrameMethod {
-		private const short _sourceClassId = 20;
-		private const short _sourceMethodId = 41;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 20;
+		public short SourceMethodId => 41;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();

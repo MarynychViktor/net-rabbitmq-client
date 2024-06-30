@@ -8,19 +8,17 @@ public class MethodGenerator
     {
         var builder = new StringBuilder();
         builder.AppendLine($"\tpublic class {StrFormatUtils.ToPascalCase(method.Name)} : IFrameMethod {{");
-        builder.AppendLine($"\t\tprivate const short _sourceClassId = {klass.Id};");
-        builder.AppendLine($"\t\tprivate const short _sourceMethodId = {method.Id};");
-        builder.AppendLine($"\t\tpublic short SourceClassId => _sourceClassId;");
-        builder.AppendLine($"\t\t public short SourceMethodId => _sourceMethodId;");
-        builder.AppendLine($"\t\tpublic const bool IsAsyncResponse = {(method.IsAsyncResponse ? "true" : "false")};");
-        builder.AppendLine($"\t\tpublic const bool HasBody = false;");
+        builder.AppendLine($"\t\tpublic short SourceClassId => {klass.Id};");
+        builder.AppendLine($"\t\tpublic short SourceMethodId => {method.Id};");
+        builder.AppendLine($"\t\tpublic bool IsAsyncResponse => {(method.IsAsyncResponse ? "true" : "false")};");
+        builder.AppendLine($"\t\tpublic bool HasBody => {(DomainTypes.HasBody(method.Name) ? "true" : "false")};");
         
         if (method.Fields.Any()) builder.AppendLine();
 
         foreach (var field in method.Fields)
         {
             var localDomain = DomainTypes.DomainToInternalTypeMap[field.Domain];
-            builder.AppendLine($"\t\tpublic {(localDomain == "byte" ? "bool" : localDomain )} {StrFormatUtils.ToPascalCase(field.Name)} {{ get; set; }}");
+            builder.AppendLine($"\t\tpublic {(localDomain == "bit" ? "bool" : localDomain )} {StrFormatUtils.ToPascalCase(field.Name)} {{ get; set; }}{(field.IsReserved && localDomain == "string" ? "= \"\";" : "")}");
         }
 
         GenerateSerializer(builder, method);
@@ -45,7 +43,7 @@ public class MethodGenerator
         {
             var field = method.Fields[i];
             var localDomain = DomainTypes.DomainToInternalTypeMap[field.Domain];
-            if (localDomain == "byte")
+            if (localDomain == "bit")
             {
                 var append = prevField != null && string.Equals(DomainTypes.DomainToInternalTypeMap[prevField.Domain], localDomain) ? "true" : "false";
                 
@@ -58,7 +56,7 @@ public class MethodGenerator
                     var bitField = method.Fields[i];
                     localDomain = DomainTypes.DomainToInternalTypeMap[bitField.Domain];
                     append = prevField != null && string.Equals(DomainTypes.DomainToInternalTypeMap[prevField.Domain], localDomain) ? "true" : "false";
-                    if (localDomain != "byte")
+                    if (localDomain != "bit")
                     {
                         i--;
                         break;
@@ -95,7 +93,7 @@ public class MethodGenerator
             var field = method.Fields[i];
             var localDomain = DomainTypes.DomainToInternalTypeMap[field.Domain];
 
-            if (localDomain == "byte")
+            if (localDomain == "bit")
             {
                 builder.AppendLine($"\t\t\tvar flags = reader.ReadByte();");
 
@@ -107,7 +105,7 @@ public class MethodGenerator
 
                     var bitField = method.Fields[i];
                     localDomain = DomainTypes.DomainToInternalTypeMap[bitField.Domain];
-                    if (localDomain != "byte")
+                    if (localDomain != "bit")
                     {
                         i--;
                         break;

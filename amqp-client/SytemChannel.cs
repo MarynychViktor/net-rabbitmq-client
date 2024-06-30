@@ -14,8 +14,8 @@ internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameS
 
     public async Task CloseConnection()
     {
-        var method = new ConnectionClose();
-        await CallMethodAsync<ConnectionCloseOk>(method, checkForClosed: false);
+        var method = new Protocol.Method2.Connection.Close();
+        await CallMethodAsync<Protocol.Method2.Connection.CloseOk>(method, checkForClosed: false);
         await _listenerCancellationSource.CancelAsync();
         await connection.CloseAsync();
     }
@@ -42,7 +42,7 @@ internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameS
                     switch (nextFrame)
                     {
                         case AmqpMethodFrame frame:
-                            if (frame.Method.IsAsyncResponse())
+                            if (frame.Method.IsAsyncResponse)
                             {
                                 if (!SyncMethodHandles.TryDequeue(out var result))
                                     throw new Exception("No task completion source found");
@@ -64,7 +64,7 @@ internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameS
 
                                     LastErrorResult = result;
                                     State = ChannelState.Failed;
-                                    await CallMethodAsync(new ConnectionCloseOk());
+                                    await CallMethodAsync(new Protocol.Method2.Connection.CloseOk());
                                     await connection.CloseAsync();
                                     break;
                                 default:

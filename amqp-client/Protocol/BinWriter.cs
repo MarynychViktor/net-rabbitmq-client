@@ -102,6 +102,10 @@ public class BinWriter : BinaryWriter
                 throw new Exception("Failed to write value");
         }
     }
+    public void WriteByte(byte value)
+    {
+        Write(value);
+    }
 
     public void WriteShort(short value)
     {

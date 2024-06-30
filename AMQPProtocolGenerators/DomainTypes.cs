@@ -6,20 +6,20 @@ public static class DomainTypes
     {
         { "class-id", "short" },
         { "consumer-tag", "string" },
-        { "delivery-tag", "int" },
+        { "delivery-tag", "long" },
         { "exchange-name", "string" },
         { "method-id", "short" },
-        { "no-ack", "byte" },
-        { "no-local", "byte" },
-        { "no-wait", "byte" },
+        { "no-ack", "bit" },
+        { "no-local", "bit" },
+        { "no-wait", "bit" },
         { "path", "string" },
         { "peer-properties", "Dictionary<string, object>" },
         { "queue-name", "string" },
-        { "redelivered", "byte" },
+        { "redelivered", "bit" },
         { "message-count", "int" },
         { "reply-code", "short" },
         { "reply-text", "string" },
-        { "bit", "byte" },
+        { "bit", "bit" },
         { "octet", "byte" },
         { "short", "short" },
         { "long", "int" },
@@ -33,7 +33,7 @@ public static class DomainTypes
     {
         { "class-id", "Short" },
         { "consumer-tag", "ShortStr" },
-        { "delivery-tag", "Int" },
+        { "delivery-tag", "Long" },
         { "exchange-name", "ShortStr" },
         { "method-id", "Short" },
         { "no-ack", "Bit" },
@@ -47,7 +47,7 @@ public static class DomainTypes
         { "reply-code", "Short" },
         { "reply-text", "ShortStr" },
         { "bit", "Bit" },
-        { "octet", "Bit" },
+        { "octet", "Byte" },
         { "short", "Short" },
         { "long", "Int" },
         { "longlong", "Long" },
@@ -66,4 +66,13 @@ public static class DomainTypes
     {
         return $"Read{StrFormatUtils.ToPascalCase(DomainToWriterMap[domain])}";
     }
+
+    private static readonly List<string> MethodsWithBody =
+    [
+        "get-ok",
+        "deliver",
+        "publish"
+    ];
+
+    public static bool HasBody(string method) => MethodsWithBody.Contains(method);
 }

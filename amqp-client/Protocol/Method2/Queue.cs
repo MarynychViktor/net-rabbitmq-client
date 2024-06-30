@@ -2,12 +2,10 @@ namespace AMQPClient.Protocol.Method2;
 
 public class Queue {
 	public class Declare : IFrameMethod {
-		private const short _sourceClassId = 50;
-		private const short _sourceMethodId = 10;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 50;
+		public short SourceMethodId => 10;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public short Reserved1 { get; set; }
 		public string Queue { get; set; }
@@ -50,12 +48,10 @@ public class Queue {
 	}
 
 	public class DeclareOk : IFrameMethod {
-		private const short _sourceClassId = 50;
-		private const short _sourceMethodId = 11;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 50;
+		public short SourceMethodId => 11;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public string Queue { get; set; }
 		public int MessageCount { get; set; }
@@ -82,12 +78,10 @@ public class Queue {
 	}
 
 	public class Bind : IFrameMethod {
-		private const short _sourceClassId = 50;
-		private const short _sourceMethodId = 20;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 50;
+		public short SourceMethodId => 20;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public short Reserved1 { get; set; }
 		public string Queue { get; set; }
@@ -124,12 +118,10 @@ public class Queue {
 	}
 
 	public class BindOk : IFrameMethod {
-		private const short _sourceClassId = 50;
-		private const short _sourceMethodId = 21;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 50;
+		public short SourceMethodId => 21;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -146,12 +138,10 @@ public class Queue {
 	}
 
 	public class Unbind : IFrameMethod {
-		private const short _sourceClassId = 50;
-		private const short _sourceMethodId = 50;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 50;
+		public short SourceMethodId => 50;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public short Reserved1 { get; set; }
 		public string Queue { get; set; }
@@ -184,12 +174,10 @@ public class Queue {
 	}
 
 	public class UnbindOk : IFrameMethod {
-		private const short _sourceClassId = 50;
-		private const short _sourceMethodId = 51;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 50;
+		public short SourceMethodId => 51;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -206,12 +194,10 @@ public class Queue {
 	}
 
 	public class Purge : IFrameMethod {
-		private const short _sourceClassId = 50;
-		private const short _sourceMethodId = 30;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 50;
+		public short SourceMethodId => 30;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public short Reserved1 { get; set; }
 		public string Queue { get; set; }
@@ -239,12 +225,10 @@ public class Queue {
 	}
 
 	public class PurgeOk : IFrameMethod {
-		private const short _sourceClassId = 50;
-		private const short _sourceMethodId = 31;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 50;
+		public short SourceMethodId => 31;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public int MessageCount { get; set; }
 
@@ -265,12 +249,10 @@ public class Queue {
 	}
 
 	public class Delete : IFrameMethod {
-		private const short _sourceClassId = 50;
-		private const short _sourceMethodId = 40;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 50;
+		public short SourceMethodId => 40;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public short Reserved1 { get; set; }
 		public string Queue { get; set; }
@@ -304,12 +286,10 @@ public class Queue {
 	}
 
 	public class DeleteOk : IFrameMethod {
-		private const short _sourceClassId = 50;
-		private const short _sourceMethodId = 41;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 50;
+		public short SourceMethodId => 41;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public int MessageCount { get; set; }
 

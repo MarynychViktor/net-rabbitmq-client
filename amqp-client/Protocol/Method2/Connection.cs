@@ -2,15 +2,13 @@ namespace AMQPClient.Protocol.Method2;
 
 public class Connection {
 	public class Start : IFrameMethod {
-		private const short _sourceClassId = 10;
-		private const short _sourceMethodId = 10;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 10;
+		public short SourceMethodId => 10;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
-		public bool VersionMajor { get; set; }
-		public bool VersionMinor { get; set; }
+		public byte VersionMajor { get; set; }
+		public byte VersionMinor { get; set; }
 		public Dictionary<string, object> ServerProperties { get; set; }
 		public string Mechanisms { get; set; }
 		public string Locales { get; set; }
@@ -19,8 +17,8 @@ public class Connection {
 			var writer = new BinWriter();
 			writer.WriteShort(SourceClassId);
 			writer.WriteShort(SourceMethodId);
-			writer.WriteBit((byte)(VersionMajor ? 1 : 0), false);
-			writer.WriteBit((byte)(VersionMinor ? 2 : 0), true);
+			writer.WriteByte(VersionMajor);
+			writer.WriteByte(VersionMinor);
 			writer.WriteFieldTable(ServerProperties);
 			writer.WriteLongStr(Mechanisms);
 			writer.WriteLongStr(Locales);
@@ -31,9 +29,8 @@ public class Connection {
 			var reader = new BinReader(bytes);
 			reader.ReadShort();
 			reader.ReadShort();
-			var flags = reader.ReadByte();
-			VersionMajor = (flags & 1) > 0;
-			VersionMinor = (flags & 2) > 0;
+			VersionMajor = reader.ReadByte();
+			VersionMinor = reader.ReadByte();
 			ServerProperties = reader.ReadFieldTable();
 			Mechanisms = reader.ReadLongStr();
 			Locales = reader.ReadLongStr();
@@ -41,12 +38,10 @@ public class Connection {
 	}
 
 	public class StartOk : IFrameMethod {
-		private const short _sourceClassId = 10;
-		private const short _sourceMethodId = 11;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 10;
+		public short SourceMethodId => 11;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public Dictionary<string, object> ClientProperties { get; set; }
 		public string Mechanism { get; set; }
@@ -76,12 +71,10 @@ public class Connection {
 	}
 
 	public class Secure : IFrameMethod {
-		private const short _sourceClassId = 10;
-		private const short _sourceMethodId = 20;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 10;
+		public short SourceMethodId => 20;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public string Challenge { get; set; }
 
@@ -102,12 +95,10 @@ public class Connection {
 	}
 
 	public class SecureOk : IFrameMethod {
-		private const short _sourceClassId = 10;
-		private const short _sourceMethodId = 21;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 10;
+		public short SourceMethodId => 21;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public string Response { get; set; }
 
@@ -128,12 +119,10 @@ public class Connection {
 	}
 
 	public class Tune : IFrameMethod {
-		private const short _sourceClassId = 10;
-		private const short _sourceMethodId = 30;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 10;
+		public short SourceMethodId => 30;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public short ChannelMax { get; set; }
 		public int FrameMax { get; set; }
@@ -160,12 +149,10 @@ public class Connection {
 	}
 
 	public class TuneOk : IFrameMethod {
-		private const short _sourceClassId = 10;
-		private const short _sourceMethodId = 31;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 10;
+		public short SourceMethodId => 31;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public short ChannelMax { get; set; }
 		public int FrameMax { get; set; }
@@ -192,15 +179,13 @@ public class Connection {
 	}
 
 	public class Open : IFrameMethod {
-		private const short _sourceClassId = 10;
-		private const short _sourceMethodId = 40;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 10;
+		public short SourceMethodId => 40;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public string VirtualHost { get; set; }
-		public string Reserved1 { get; set; }
+		public string Reserved1 { get; set; }= "";
 		public bool Reserved2 { get; set; }
 
 		public byte[] Serialize() {
@@ -225,14 +210,12 @@ public class Connection {
 	}
 
 	public class OpenOk : IFrameMethod {
-		private const short _sourceClassId = 10;
-		private const short _sourceMethodId = 41;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 10;
+		public short SourceMethodId => 41;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
-		public string Reserved1 { get; set; }
+		public string Reserved1 { get; set; }= "";
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -251,12 +234,10 @@ public class Connection {
 	}
 
 	public class Close : IFrameMethod {
-		private const short _sourceClassId = 10;
-		private const short _sourceMethodId = 50;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 10;
+		public short SourceMethodId => 50;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public short ReplyCode { get; set; }
 		public string ReplyText { get; set; }
@@ -286,12 +267,10 @@ public class Connection {
 	}
 
 	public class CloseOk : IFrameMethod {
-		private const short _sourceClassId = 10;
-		private const short _sourceMethodId = 51;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 10;
+		public short SourceMethodId => 51;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();

@@ -4,8 +4,8 @@ public interface IFrameMethod
 {
     public short SourceClassId { get; }
     public short SourceMethodId { get; }
-    public const bool IsAsyncResponse = true;
-    public const bool HasBody = false;
+    public bool IsAsyncResponse { get; }
+    public bool HasBody { get; }
     public byte[] Serialize();
     public void Deserialize(byte[] bytes);
 }

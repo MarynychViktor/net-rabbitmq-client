@@ -69,7 +69,7 @@ public class IncomingFrameListener
         var method = methodFrame.Method;
         Logger.LogDebug("Received method frame:\n\t {method}", method);
 
-        if (method.HasBody())
+        if (method.HasBody)
         {
             await PublishMethod(methodFrame);
             return;

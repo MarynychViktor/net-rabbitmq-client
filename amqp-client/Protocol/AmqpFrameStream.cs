@@ -23,10 +23,6 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
 
     public Task SendFrameAsync(AmqpFrame frame)
     {
-        if (frame is AmqpMethodFrame metw)
-        {
-
-        }
         return SendRawAsync(frame.ToBytes());
     }
 
@@ -76,23 +72,31 @@ public class AmqpFrameStream : IAmqpFrameSender, IDisposable, IAsyncDisposable
         var classId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[..2]);
         var methodId = BinaryPrimitives.ReadInt16BigEndian(_frameBody.AsSpan()[2..4]);
         var methodInfo = typeof(Decoder).GetMethod("CreateMethodFrame")!;
-        var tp = MethodTypeHelper.GetMethodType2(classId, methodId);
-        var instance = (IFrameMethod)(Activator.CreateInstance(tp));
-        
-        // var genericMethod = methodInfo.MakeGenericMethod(MethodTypeHelper.GetMethodType2(classId, methodId));
-        // var decodedMethod = (Method)genericMethod.Invoke(null, [_frameBody])!;
-        // var methodFrame = new AmqpMethodFrame(channel, decodedMethod);
-
-
-        if (decodedMethod.HasBody())
+        try
         {
-            if (!_partialFrames.ContainsKey(channel)) _partialFrames[channel] = new Queue<AmqpMethodFrame>();
+            var tp = MethodTypeHelper.GetMethodType2(classId, methodId);
+            var instance = (IFrameMethod)(Activator.CreateInstance(tp)!);
+            instance.Deserialize(_frameBody);
+            // var genericMethod = methodInfo.MakeGenericMethod(MethodTypeHelper.GetMethodType2(classId, methodId));
+            // var decodedMethod = (Method)genericMethod.Invoke(null, [_frameBody])!;
+            var methodFrame = new AmqpMethodFrame(channel, instance);
 
-            _partialFrames[channel].Enqueue(methodFrame);
-            return null;
+            if (instance.HasBody)
+            {
+                if (!_partialFrames.ContainsKey(channel)) _partialFrames[channel] = new Queue<AmqpMethodFrame>();
+
+                _partialFrames[channel].Enqueue(methodFrame);
+                return null;
+            }
+
+            return methodFrame;
+
         }
-
-        return methodFrame;
+        catch (Exception e)
+        {
+            var a = 12;
+            throw;
+        }
     }
 
     private AmqpHeaderFrame? HandleContentHeaderFrame(short channel)

@@ -1,10 +1,12 @@
 using System.Threading.Channels;
 using AMQPClient.Protocol;
+using AMQPClient.Protocol.Method2;
 using AMQPClient.Protocol.Methods.Basic;
 using AMQPClient.Protocol.Methods.Channels;
 using AMQPClient.Protocol.Methods.Exchanges;
 using AMQPClient.Protocol.Methods.Queues;
 using Microsoft.Extensions.Logging;
+using Channel = AMQPClient.Protocol.Method2.Channel;
 
 namespace AMQPClient;
 
@@ -17,19 +19,25 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
     private CancellationTokenSource _listenerCancellationSource;
 
     public async Task ExchangeDeclare(string name, bool passive = false, bool durable = false, bool autoDelete = false,
-        bool internalOnly = false, bool nowait = false)
+        bool internalOnly = false, bool nowait = false, string type = "direct")
     {
-        var flags = ExchangeDeclareFlags.None;
-        if (passive) flags |= ExchangeDeclareFlags.Passive;
-        if (durable) flags |= ExchangeDeclareFlags.Durable;
-        if (autoDelete) flags |= ExchangeDeclareFlags.AutoDelete;
-        if (internalOnly) flags |= ExchangeDeclareFlags.Internal;
-        if (nowait) flags |= ExchangeDeclareFlags.NoWait;
+        // var flags = ExchangeDeclareFlags.None;
+        // if (passive) flags |= ExchangeDeclareFlags.Passive;
+        // if (durable) flags |= ExchangeDeclareFlags.Durable;
+        // if (autoDelete) flags |= ExchangeDeclareFlags.AutoDelete;
+        // if (internalOnly) flags |= ExchangeDeclareFlags.Internal;
+        // if (nowait) flags |= ExchangeDeclareFlags.NoWait;
 
-        var method = new ExchangeDeclare
+        var method = new Exchange.Declare()
         {
-            Name = name,
-            Flags = (byte)flags
+            Exchange = name,
+            Type = type,
+            Passive = passive,
+            Durable = durable,
+            Reserved2 = autoDelete,
+            Reserved3 = internalOnly,
+            NoWait = nowait,
+            Arguments = new(),
         };
 
         if (nowait)
@@ -38,94 +46,94 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
             return;
         }
 
-        await CallMethodAsync<ExchangeDeclareOk>(method);
+        await CallMethodAsync<Exchange.DeclareOk>(method);
     }
 
     public async Task Flow(bool active)
     {
-        var method = new ChannelFlowMethod()
+        var method = new Channel.Flow()
         {
-            Active = (byte)(active ? 1 : 0)
+            Active = active
         };
 
-        await CallMethodAsync<ChannelFlowOkMethod>(method);
+        await CallMethodAsync<Channel.FlowOk>(method);
     }
 
     public async Task Close()
     {
-        var method = new ChannelCloseMethod();
+        var method = new Channel.Close();
         State = ChannelState.Closed;
-        await CallMethodAsync<ChannelCloseOkMethod>(method, checkForClosed: false);
+        await CallMethodAsync<Channel.CloseOk>(method, checkForClosed: false);
         await _listenerCancellationSource.CancelAsync();
     }
 
     public async Task ExchangeDelete(string name)
     {
-        var method = new ExchangeDelete
+        var method = new Exchange.Delete()
         {
-            Name = name
+            Exchange = name
         };
 
-        await CallMethodAsync<ExchangeDeleteOk>(method);
+        await CallMethodAsync<Exchange.DeleteOk>(method);
     }
 
+    // TODO: declare args
     public async Task<string> QueueDeclare(string name = "")
     {
-        var method = new QueueDeclare
+        var method = new Queue.Declare()
         {
-            Name = name
+            Queue = name,
+            Arguments = new(),
         };
 
-        var result = await CallMethodAsync<QueueDeclareOk>(method);
-        return result.Name;
+        var result = await CallMethodAsync<Queue.DeclareOk>(method);
+        return result.Queue;
     }
 
     public async Task QueueBind(string queue, string exchange, string routingKey)
     {
-        var method = new QueueBind
+        var method = new Queue.Bind()
         {
             Queue = queue,
             Exchange = exchange,
-            RoutingKey = routingKey
+            RoutingKey = routingKey,
+            Arguments = new()
         };
-        await CallMethodAsync<QueueBindOk>(method);
+        await CallMethodAsync<Queue.BindOk>(method);
     }
 
     public async Task QueueUnbind(string queue, string exchange, string routingKey, Dictionary<string, object>? arguments = null)
     {
-        var method = new QueueUnbind()
+        var method = new Queue.Unbind()
         {
             Queue = queue,
             Exchange = exchange,
             RoutingKey = routingKey,
             Arguments = arguments ?? new(),
         };
-        await CallMethodAsync<QueueUnbindOk>(method);
+        await CallMethodAsync<Queue.UnbindOk>(method);
     }
 
     public async Task QueuePurge(string queue, bool noWait = false)
     {
-        var method = new QueuePurge()
+        var method = new Queue.Purge()
         {
             Queue = queue,
-            NoWait = (byte)(noWait ? 1 : 0)
+            NoWait = noWait
         };
 
-        await CallMethodAsync<QueuePurgeOk>(method);
+        await CallMethodAsync<Queue.PurgeOk>(method);
     }
 
     // TODO: add precondition errors handling
     public async Task QueueDelete(string queue, bool ifUnused = false, bool ifEmpty = false, bool noWait = false)
     {
-        var flags = QueueDeleteFlags.None;
-        if (ifUnused) flags |= QueueDeleteFlags.IfUnused;
-        if (ifEmpty) flags |= QueueDeleteFlags.IfEmpty;
-        if (noWait) flags |= QueueDeleteFlags.NoWait;
-
-        var method = new QueueDelete()
+        var method = new Queue.Delete()
         {
             Queue = queue,
-            Flags = (byte)flags,
+            IfUnused = ifUnused,
+            IfEmpty = ifEmpty,
+            NoWait = noWait
         };
 
         if (noWait)
@@ -134,30 +142,32 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         }
         else
         {
-            await CallMethodAsync<QueueDeleteOk>(method);
+            await CallMethodAsync<Queue.DeleteOk>(method);
         }
     }
 
     public async Task<string> BasicConsume(string queue, Action<IMessage> consumer)
     {
-        var method = new BasicConsume
+        var method = new Basic.Consume()
         {
-            Queue = queue
+            Queue = queue,
+            ConsumerTag = "",
+            Arguments = new(),
         };
 
-        var response = await CallMethodAsync<BasicConsumeOk>(method);
-        Logger.LogDebug("Registered consumer with tag: {tag}", response.Tag);
+        var response = await CallMethodAsync<Basic.ConsumeOk>(method);
+        Logger.LogDebug("Registered consumer with tag: {tag}", response.ConsumerTag);
 
-        _consumersByTags.Add(response.Tag, consumer);
-        return response.Tag;
+        _consumersByTags.Add(response.ConsumerTag, consumer);
+        return response.ConsumerTag;
     }
 
     public async Task BasicCancel(string consumerTag, bool noWait = false)
     {
-        var method = new BasicCancel()
+        var method = new Basic.Cancel()
         {
             ConsumerTag = consumerTag,
-            NoWait = (byte)(noWait ? 1 : 0)
+            NoWait = noWait
         };
 
         if (noWait)
@@ -167,14 +177,14 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
         }
         else
         {
-            var response = await CallMethodAsync<BasicCancelOk>(method);
+            var response = await CallMethodAsync<Basic.CancelOk>(method);
             _consumersByTags.Remove(response.ConsumerTag);
         }
     }
 
     public async Task BasicPublishAsync(string exchange, string routingKey, IMessage message)
     {
-        var method = new BasicPublish
+        var method = new Basic.Publish
         {
             Exchange = exchange,
             RoutingKey = routingKey
@@ -187,11 +197,11 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
     {
         if (message.DeliveryTag is {} deliveryTag)
         {
-            var method = new BasicAck
+            var method = new Basic.Ack
             {
-                Tag = deliveryTag,
+                DeliveryTag = deliveryTag,
                 // TODO: add support for this param
-                Multiple = 0
+                Multiple = false,
             };
 
             await CallMethodAsync(method);
@@ -206,10 +216,10 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
     {
         if (message.DeliveryTag is {} deliveryTag)
         {
-            var method = new BasicReject()
+            var method = new Basic.Reject()
             {
-                Tag = deliveryTag,
-                Requeue = (byte)(requeue ? 1 : 0)
+                DeliveryTag = deliveryTag,
+                Requeue = requeue
             };
 
             await CallMethodAsync(method);
@@ -224,44 +234,44 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
     {
         // Recovery with requeue=false is not supported.
         // https://www.rabbitmq.com/docs/specification
-        var method = new BasicRecover()
+        var method = new Basic.Recover()
         {
-            Requeue = 1
+            Requeue = true
         };
-        await CallMethodAsync<BasicRecoverOk>(method);
+        await CallMethodAsync<Basic.RecoverOk>(method);
     }
 
     public async Task BasicQos(short prefetchCount, bool global = false)
     {
-        var method = new BasicQos()
+        var method = new Basic.Qos()
         {
             // Not implemented in rabbitmq
             // https://www.rabbitmq.com/amqp-0-9-1-reference#domain.short
             PrefetchSize = 0,
             PrefetchCount = prefetchCount,
-            Global = (byte)(global ? 1 : 0)
+            Global = global
         };
 
-        await CallMethodAsync<BasicQosOk>(method);
+        await CallMethodAsync<Basic.QosOk>(method);
     }
 
     public async Task<IMessage?> BasicGet(string queue, bool noAck = false)
     {
-        var method = new BasicGet()
+        var method = new Basic.Get()
         {
-            QueueName = queue,
-            NoAck = (byte)(noAck ? 1 : 0)
+            Queue = queue,
+            NoAck = noAck
         };
 
         var result = await CallFrameAsync(method);
-        if (result.Method is BasicGetOk getOkMethod)
+        if (result.Method is Basic.GetOk getOkMethod)
         {
             var frame = result.MethodFrame;
-            return new IncomingMessage(frame.Body, frame.Properties, getOkMethod.DeliverTag,
-                getOkMethod.Redelivered == 1, getOkMethod.Exchange, getOkMethod.RoutingKey);
+            return new IncomingMessage(frame.Body, frame.Properties, getOkMethod.DeliveryTag,
+                getOkMethod.Redelivered, getOkMethod.Exchange, getOkMethod.RoutingKey);
         }
 
-        if (result.Method is BasicGetEmpty) return null;
+        if (result.Method is Basic.GetEmpty) return null;
 
         throw new Exception($"Unexpected result {result}");
     }
@@ -270,7 +280,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
     {
         _listenerCancellationSource = new CancellationTokenSource();
         StartListener(_listenerCancellationSource.Token);
-        await CallMethodAsync<ChannelOpenOkMethod>(new ChannelOpenMethod());
+        await CallMethodAsync<Protocol.Method2.Channel.OpenOk>(new Protocol.Method2.Channel.Open());
     }
 
     private void StartListener(CancellationToken cancellationToken = default)
@@ -308,7 +318,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
 
     private bool TryHandleAsyncResponse(AmqpMethodFrame frame)
     {
-        if (!frame.Method.IsAsyncResponse()) return false;
+        if (!frame.Method.IsAsyncResponse) return false;
 
         if (!SyncMethodHandles.TryDequeue(out var result))
             throw new Exception("No task completion source found");
@@ -321,7 +331,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
     {
         switch (frame.Method)
         {
-            case ChannelCloseMethod closeMethod:
+            case Channel.Close closeMethod:
                 Logger.LogError("Closing channel\n {code}, {text} ", closeMethod.ReplyCode, closeMethod.ReplyText);
 
                 var result = new MethodResult(null, closeMethod.ReplyCode, closeMethod.ReplyText);
@@ -331,7 +341,7 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
                     source.SetResult(result);
                 }
 
-                await CallMethodAsync(new ChannelCloseOkMethod());
+                await CallMethodAsync(new Channel.CloseOk());
                 LastErrorResult = result;
                 State = ChannelState.Failed;
                 break;
@@ -342,9 +352,9 @@ internal class ChannelImpl(Channel<object> trxChannel, IAmqpFrameSender frameSen
     
     private bool TryHandleConsumerMessage(AmqpMethodFrame frame)
     {
-        if (!frame.Method.HasBody() || frame.Method is not BasicDeliver method) return false;
+        if (!frame.Method.HasBody || frame.Method is not Basic.Deliver method) return false;
 
-        var message2 = new IncomingMessage(frame.Body, frame.Properties, method.DeliverTag, method.Redelivered == 1, method.Exchange, method.RoutingKey);
+        var message2 = new IncomingMessage(frame.Body, frame.Properties, method.DeliveryTag, method.Redelivered, method.Exchange, method.RoutingKey);
         _consumersByTags[method.ConsumerTag].Invoke(message2);
         return true;
     }

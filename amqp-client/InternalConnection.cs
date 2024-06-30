@@ -83,9 +83,9 @@ public class InternalConnection
             return (AmqpMethodFrame)nextFrame;
         }
 
-        async Task WriteMethodFrameAsync(Method method)
+        async Task WriteMethodFrameAsync(IFrameMethod method)
         {
-            var bytes = Encoder.MarshalMethodFrame(method);
+            var bytes = method.Serialize();
             await _amqpFrameStream.SendFrameAsync(new AmqpFrame(0, bytes, FrameType.Method));
         }
         _logger.LogDebug("Handshake started");
@@ -98,7 +98,7 @@ public class InternalConnection
         await ReadNextMethodFrame();
 
         // FIXME: review with dynamic params
-        var startOkMethod = new StartOkMethod
+        var startOkMethod = new Protocol.Method2.Connection.StartOk()
         {
             ClientProperties = new Dictionary<string, object>
             {
@@ -114,10 +114,10 @@ public class InternalConnection
         await WriteMethodFrameAsync(startOkMethod);
 
         var nextFrame = await ReadNextMethodFrame();
-        var tuneMethod = (TuneMethod)nextFrame.Method;
+        var tuneMethod = (Protocol.Method2.Connection.Tune)nextFrame.Method;
 
         // TODO: dynamic values for channelMax and frameMax
-        var tuneOkMethod = new TuneOkMethod
+        var tuneOkMethod = new Protocol.Method2.Connection.TuneOk()
         {
             ChannelMax = tuneMethod.ChannelMax,
             Heartbeat = _params.HeartbeatInterval,
@@ -125,7 +125,7 @@ public class InternalConnection
         };
         await WriteMethodFrameAsync(tuneOkMethod);
 
-        var openMethod = new OpenMethod
+        var openMethod = new Protocol.Method2.Connection.Open()
         {
             VirtualHost = _params.Vhost
         };

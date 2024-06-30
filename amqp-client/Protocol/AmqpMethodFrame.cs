@@ -33,12 +33,12 @@ public class AmqpFrame
 
 public class AmqpMethodFrame : AmqpFrame
 {
-    public AmqpMethodFrame(short channel, Method payload) : base(channel, new byte[] { }, FrameType.Method)
+    public AmqpMethodFrame(short channel, IFrameMethod payload) : base(channel, new byte[] { }, FrameType.Method)
     {
         Method = payload;
     }
 
-    public Method Method { get; set; }
+    public IFrameMethod Method { get; set; }
     public HeaderProperties? Properties { get; set; }
     public long? BodyLength { get; set; }
     public byte[]? Body { get; set; }
@@ -49,7 +49,39 @@ public class AmqpMethodFrame : AmqpFrame
         var writer = new BinWriter();
         writer.Write((byte)Type);
         writer.WriteShort(Channel);
-        var payload = Encoder.MarshalMethodFrame(Method);
+        var payload = Method.Serialize();
+        writer.WriteInt(payload.Length);
+        writer.Write(payload);
+        writer.Write((byte)0xCE);
+
+        return writer.ToArray();
+    }
+}
+
+public class AmqpMethodFrame2
+{
+    public AmqpMethodFrame2(short channel, IFrameMethod method, HeaderProperties? properties = null, long? bodyLength = null, byte[]? body = null)
+    {
+        Channel = channel;
+        Method = method;
+        Properties = properties;
+        BodyLength = bodyLength;
+        Body = body;
+    }
+
+    public short Channel { get; set; }
+    public IFrameMethod Method { get; set; }
+    public HeaderProperties? Properties { get; set; }
+    public long? BodyLength { get; set; }
+    public byte[]? Body { get; set; }
+
+
+    public byte[] ToBytes()
+    {
+        var writer = new BinWriter();
+        writer.Write((byte)1);
+        writer.WriteShort(Channel);
+        var payload = Method.Serialize();
         writer.WriteInt(payload.Length);
         writer.Write(payload);
         writer.Write((byte)0xCE);

@@ -8,7 +8,7 @@ public record MethodResult(AmqpMethodFrame? MethodFrame)
     public short? ErrorCode { get; }
     public string? ErrorMessage { get; }
     public bool IsOk() => ErrorCode == null && ErrorMessage == null;
-    public Method? Method => MethodFrame?.Method;
+    public IFrameMethod? Method => MethodFrame?.Method;
 
     public MethodResult(AmqpMethodFrame? methodFrame, short errorCode, string errorMessage) : this(methodFrame)
     {

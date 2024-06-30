@@ -2,12 +2,10 @@ namespace AMQPClient.Protocol.Method2;
 
 public class Basic {
 	public class Qos : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 10;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 10;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public int PrefetchSize { get; set; }
 		public short PrefetchCount { get; set; }
@@ -35,12 +33,10 @@ public class Basic {
 	}
 
 	public class QosOk : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 11;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 11;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -57,12 +53,10 @@ public class Basic {
 	}
 
 	public class Consume : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 20;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 20;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public short Reserved1 { get; set; }
 		public string Queue { get; set; }
@@ -105,12 +99,10 @@ public class Basic {
 	}
 
 	public class ConsumeOk : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 21;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 21;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public string ConsumerTag { get; set; }
 
@@ -131,12 +123,10 @@ public class Basic {
 	}
 
 	public class Cancel : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 30;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 30;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public string ConsumerTag { get; set; }
 		public bool NoWait { get; set; }
@@ -161,12 +151,10 @@ public class Basic {
 	}
 
 	public class CancelOk : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 31;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 31;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => false;
 
 		public string ConsumerTag { get; set; }
 
@@ -187,12 +175,10 @@ public class Basic {
 	}
 
 	public class Publish : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 40;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 40;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => true;
 
 		public short Reserved1 { get; set; }
 		public string Exchange { get; set; }
@@ -226,12 +212,10 @@ public class Basic {
 	}
 
 	public class Return : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 50;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 50;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public short ReplyCode { get; set; }
 		public string ReplyText { get; set; }
@@ -261,15 +245,13 @@ public class Basic {
 	}
 
 	public class Deliver : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 60;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 60;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => true;
 
 		public string ConsumerTag { get; set; }
-		public int DeliveryTag { get; set; }
+		public long DeliveryTag { get; set; }
 		public bool Redelivered { get; set; }
 		public string Exchange { get; set; }
 		public string RoutingKey { get; set; }
@@ -279,7 +261,7 @@ public class Basic {
 			writer.WriteShort(SourceClassId);
 			writer.WriteShort(SourceMethodId);
 			writer.WriteShortStr(ConsumerTag);
-			writer.WriteInt(DeliveryTag);
+			writer.WriteLong(DeliveryTag);
 			writer.WriteBit((byte)(Redelivered ? 1 : 0), false);
 			writer.WriteShortStr(Exchange);
 			writer.WriteShortStr(RoutingKey);
@@ -291,7 +273,7 @@ public class Basic {
 			reader.ReadShort();
 			reader.ReadShort();
 			ConsumerTag = reader.ReadShortStr();
-			DeliveryTag = reader.ReadInt();
+			DeliveryTag = reader.ReadLong();
 			var flags = reader.ReadByte();
 			Redelivered = (flags & 1) > 0;
 			Exchange = reader.ReadShortStr();
@@ -300,12 +282,10 @@ public class Basic {
 	}
 
 	public class Get : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 70;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 70;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public short Reserved1 { get; set; }
 		public string Queue { get; set; }
@@ -333,14 +313,12 @@ public class Basic {
 	}
 
 	public class GetOk : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 71;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = true;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 71;
+		public bool IsAsyncResponse => true;
+		public bool HasBody => true;
 
-		public int DeliveryTag { get; set; }
+		public long DeliveryTag { get; set; }
 		public bool Redelivered { get; set; }
 		public string Exchange { get; set; }
 		public string RoutingKey { get; set; }
@@ -350,7 +328,7 @@ public class Basic {
 			var writer = new BinWriter();
 			writer.WriteShort(SourceClassId);
 			writer.WriteShort(SourceMethodId);
-			writer.WriteInt(DeliveryTag);
+			writer.WriteLong(DeliveryTag);
 			writer.WriteBit((byte)(Redelivered ? 1 : 0), false);
 			writer.WriteShortStr(Exchange);
 			writer.WriteShortStr(RoutingKey);
@@ -362,7 +340,7 @@ public class Basic {
 			var reader = new BinReader(bytes);
 			reader.ReadShort();
 			reader.ReadShort();
-			DeliveryTag = reader.ReadInt();
+			DeliveryTag = reader.ReadLong();
 			var flags = reader.ReadByte();
 			Redelivered = (flags & 1) > 0;
 			Exchange = reader.ReadShortStr();
@@ -372,14 +350,12 @@ public class Basic {
 	}
 
 	public class GetEmpty : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 72;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 72;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
-		public string Reserved1 { get; set; }
+		public string Reserved1 { get; set; }= "";
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
@@ -398,21 +374,19 @@ public class Basic {
 	}
 
 	public class Ack : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 80;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 80;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
-		public int DeliveryTag { get; set; }
+		public long DeliveryTag { get; set; }
 		public bool Multiple { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
 			writer.WriteShort(SourceClassId);
 			writer.WriteShort(SourceMethodId);
-			writer.WriteInt(DeliveryTag);
+			writer.WriteLong(DeliveryTag);
 			writer.WriteBit((byte)(Multiple ? 1 : 0), false);
 			return writer.ToArray();
 		}
@@ -421,28 +395,26 @@ public class Basic {
 			var reader = new BinReader(bytes);
 			reader.ReadShort();
 			reader.ReadShort();
-			DeliveryTag = reader.ReadInt();
+			DeliveryTag = reader.ReadLong();
 			var flags = reader.ReadByte();
 			Multiple = (flags & 1) > 0;
 		}
 	}
 
 	public class Reject : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 90;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 90;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
-		public int DeliveryTag { get; set; }
+		public long DeliveryTag { get; set; }
 		public bool Requeue { get; set; }
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
 			writer.WriteShort(SourceClassId);
 			writer.WriteShort(SourceMethodId);
-			writer.WriteInt(DeliveryTag);
+			writer.WriteLong(DeliveryTag);
 			writer.WriteBit((byte)(Requeue ? 1 : 0), false);
 			return writer.ToArray();
 		}
@@ -451,19 +423,17 @@ public class Basic {
 			var reader = new BinReader(bytes);
 			reader.ReadShort();
 			reader.ReadShort();
-			DeliveryTag = reader.ReadInt();
+			DeliveryTag = reader.ReadLong();
 			var flags = reader.ReadByte();
 			Requeue = (flags & 1) > 0;
 		}
 	}
 
 	public class RecoverAsync : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 100;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 100;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public bool Requeue { get; set; }
 
@@ -485,12 +455,10 @@ public class Basic {
 	}
 
 	public class Recover : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 110;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 110;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public bool Requeue { get; set; }
 
@@ -512,12 +480,10 @@ public class Basic {
 	}
 
 	public class RecoverOk : IFrameMethod {
-		private const short _sourceClassId = 60;
-		private const short _sourceMethodId = 111;
-		public short SourceClassId => _sourceClassId;
-		 public short SourceMethodId => _sourceMethodId;
-		public const bool IsAsyncResponse = false;
-		public const bool HasBody = false;
+		public short SourceClassId => 60;
+		public short SourceMethodId => 111;
+		public bool IsAsyncResponse => false;
+		public bool HasBody => false;
 
 		public byte[] Serialize() {
 			var writer = new BinWriter();
