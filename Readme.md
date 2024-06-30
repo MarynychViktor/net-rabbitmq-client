@@ -20,10 +20,10 @@ var channel = await connection.CreateChannelAsync();
 var exchangeName = "my-exchange";
 var routingKey = "some-key";
 
-var queueName = await channel.QueueDeclare("my-queue", durable: true);
-await channel.ExchangeDeclare(exchangeName);
+var queueName = await channel.QueueDeclareAsync("my-queue", durable: true);
+await channel.ExchangeDeclareAsync(exchangeName);
 
-await channel.QueueBind(queueName, exchangeName, routingKey);
+await channel.QueueBindAsync(queueName, exchangeName, routingKey);
 ```
 ### 3. Publish message
 ```c#
@@ -32,7 +32,7 @@ await channel.BasicPublishAsync(exchangeName, routingKey, new Message("Hello fro
 ### 4. Consume message
 #### Using async consumer
 ```c#
-await channel.BasicConsume(queueName, async (message) =>
+var consumerId = await channel.BasicConsumeAsync(queueName, async (message) =>
 {
   Console.WriteLine($"Message: {Encoding.Default.GetString(message.Payload.Content)}");
   await channel.BasicAck(message);
@@ -40,11 +40,11 @@ await channel.BasicConsume(queueName, async (message) =>
 ```
 #### Manual consuming
 ```c#
-var message = await channel.BasicGet(queueName);
+var message = await channel.BasicGetAsync(queueName);
 
 if (message != null) {
     Console.WriteLine($"Message: {Encoding.Default.GetString(message.Payload.Content)}");
-    await channel.BasicAck(message);
+    await channel.BasicAckAsync(message);
 }
 ```
 
