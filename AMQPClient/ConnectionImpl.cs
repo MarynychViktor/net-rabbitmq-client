@@ -7,9 +7,7 @@ using Microsoft.Extensions.Logging;
 
 namespace AMQPClient;
 
-// FIXME: handle errors
-// FIXME: stop all channels on connection close
-public class ConnectionImpl : IConnection
+internal class ConnectionImpl : IConnection
 {
     private readonly ConnectionParams _params;
     private AmqpFrameService? _amqpFrameStream;

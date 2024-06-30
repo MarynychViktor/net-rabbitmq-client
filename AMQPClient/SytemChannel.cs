@@ -18,7 +18,7 @@ internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameS
             ReplyCode = 320,
             ReplyText = "Closed by peer"
         };
-        await CallMethodAsync<Protocol.Classes.Connection.CloseOk>(method, checkForClosed: false);
+        await CallMethodAndUnwrapAsync<Protocol.Classes.Connection.CloseOk>(method, checkForClosed: false);
         await _listenerCancellationSource.CancelAsync();
     }
 
@@ -66,7 +66,7 @@ internal class SystemChannel(Channel<object> trxChannel, IAmqpFrameSender frameS
 
                                     LastErrorResult = result;
                                     State = ChannelState.Failed;
-                                    await CallMethodAsync(new Protocol.Classes.Connection.CloseOk());
+                                    await DispatchMethodAsync(new Protocol.Classes.Connection.CloseOk());
                                     await connectionImpl.CloseAsync();
                                     break;
                                 default:

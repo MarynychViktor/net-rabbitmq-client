@@ -26,11 +26,11 @@ internal abstract class ChannelBase
         return Task.CompletedTask;
     }
 
-    protected async Task<TResponse> CallMethodAsync<TResponse>(IFrameMethod method, bool checkForClosed = true)
+    protected async Task<TResponse> CallMethodAndUnwrapAsync<TResponse>(IFrameMethod method, bool checkForClosed = true)
         where TResponse : IFrameMethod
     {
         var taskSource = new TaskCompletionSource<MethodResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-        await CallMethodAsync(method, checkForClosed);
+        await DispatchMethodAsync(method, checkForClosed);
         SyncMethodHandles.Enqueue(taskSource);
 
         var result = await taskSource.Task;
@@ -42,11 +42,10 @@ internal abstract class ChannelBase
         throw new Exception($"Method call failed with {result.ErrorCode} {result.ErrorMessage}");
     }
 
-    // TODO: review/refactor/rewrite Call* methods
-    protected async Task<MethodResult> CallFrameAsync(IFrameMethod method, bool checkForClosed = true)
+    protected async Task<MethodResult> CallMethodAsync(IFrameMethod method, bool checkForClosed = true)
     {
         var taskSource = new TaskCompletionSource<MethodResult>(TaskCreationOptions.RunContinuationsAsynchronously);
-        await CallMethodAsync(method, checkForClosed);
+        await DispatchMethodAsync(method, checkForClosed);
         SyncMethodHandles.Enqueue(taskSource);
 
         var result = await taskSource.Task;
@@ -58,7 +57,7 @@ internal abstract class ChannelBase
         throw new Exception($"Method call failed with {result.ErrorCode} {result.ErrorMessage}");
     }
 
-    protected Task CallMethodAsync(IFrameMethod method, bool checkForClosed = true)
+    protected Task DispatchMethodAsync(IFrameMethod method, bool checkForClosed = true)
     {
         if (checkForClosed && IsClosed)
         {
@@ -73,9 +72,9 @@ internal abstract class ChannelBase
         return _frameSender.SendFrameAsync(new AmqpFrame(ChannelId, bytes, FrameType.Method));
     }
     
-    protected async Task CallMethodAsync(IFrameMethod method, HeaderProperties properties, byte[]? body)
+    protected async Task DispatchMethodAsync(IFrameMethod method, HeaderProperties properties, byte[]? body)
     {
-        await CallMethodAsync(method);
+        await DispatchMethodAsync(method);
 
         var headerFrame = new AmqpHeaderFrame(ChannelId, method.SourceClassId, body?.Length ?? 0, properties);
         await _frameSender.SendFrameAsync(headerFrame);
